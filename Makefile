@@ -21,6 +21,7 @@ TARGETTEST = $(BUILDDIR)/test
 
 # == Sources ==
 SRC = $(wildcard $(SRCDIR)/*.c)
+SRCTEST = $(filter-out $(SRCDIR)/main.c, $(SRC))
 SRCTESTS = $(wildcard $(TESTDIR)/*.c) \
 		   $(wildcard $(UNITYDIR)/src/*.c) \
 		   $(wildcard $(UNITYFIXTUREDIR)/src/*.c) \
@@ -34,7 +35,7 @@ INCLUDES     = -I$(INCDIR) -I/usr/include
 TESTINCLUDES = -I$(INCDIR) -I/usr/include -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)/src -I$(UNITYMEMORYDIR)/src
 
 # == Targets ==
-all: $(BUILDDIR) $(TARGET) $(TARGETTEST)
+all: $(BUILDDIR) $(TARGET) test
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
@@ -50,7 +51,7 @@ $(BUILDDIR):
 
 # == Unit Testing ==
 test: $(BUILDDIR)
-	$(CC) $(CFLAGS) $(TESTINCLUDES) $(SRCTESTS) -o $(TARGETTEST)
+	$(CC) $(CFLAGS) $(TESTINCLUDES) $(SRCTEST) $(SRCTESTS) -o $(TARGETTEST)
 	./$(TARGETTEST)
 
 tests: test
