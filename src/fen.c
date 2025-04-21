@@ -5,7 +5,7 @@
 
 #include "fen.h"
 
-Piece fenPiece(Fen *fen) { // FIXME (cameron)
+Piece fenPiece(Fen *fen) {
   char f = *fen;
   Piece p = PIECE_NULL;
 
@@ -20,19 +20,25 @@ Piece fenPiece(Fen *fen) { // FIXME (cameron)
   }
 
   // Determine type
-  switch (*fen) {
+  switch (f) {
   case 'p':
     p |= PIECE_PAWN;
+    break;
   case 'r':
     p |= PIECE_ROOK;
+    break;
   case 'n':
     p |= PIECE_KNIGHT;
+    break;
   case 'b':
     p |= PIECE_BISHOP;
+    break;
   case 'q':
     p |= PIECE_QUEEN;
+    break;
   case 'k':
     p |= PIECE_KING;
+    break;
   }
 
   return p;
