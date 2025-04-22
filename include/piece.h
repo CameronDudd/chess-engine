@@ -23,6 +23,10 @@
 // |  7  | 1000 0000 |  King    |
 // +-----+-----------+----------+
 
+// Unicode Chess Symbols https://en.wikipedia.org/wiki/Chess_symbols_in_Unicode
+// U+265x
+// 4-K 5-Q 6-R 7-B 8-N 9-P A-k B-q C-r D-b E-n F-p
+
 typedef uint8_t Piece;
 
 #define PIECE_NULL   (Piece)0b00000000
@@ -34,5 +38,7 @@ typedef uint8_t Piece;
 #define PIECE_ROOK   (Piece)0b00100000
 #define PIECE_QUEEN  (Piece)0b01000000
 #define PIECE_KING   (Piece)0b10000000
+
+const char *pieceStr(const Piece *piece);
 
 #endif  // PIECE_H
