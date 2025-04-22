@@ -64,8 +64,8 @@ int fenActiveColor(Fen *fen) {
 
 void fenPopulateBoard(Fen *fen, Piece board[NUM_PIECES]) {
   do {
-    if ('a' <= *fen && *fen <= 'z') {
-      *board++ = *fen;
+    if (('a' <= *fen && *fen <= 'z') || ('A' <= *fen && *fen <= 'Z')) {
+      *board++ = fenPiece(fen);
     } else if ('0' <= *fen && *fen <= '9') {
       for (int i = 0; i < fenWhitespace(fen); i++) {
         *board++ = PIECE_NULL;
