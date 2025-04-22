@@ -38,6 +38,7 @@ TESTINCLUDES = -I$(INCDIR) -I/usr/include -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)
 all: main test
 
 main: $(BUILDDIR) $(TARGET)
+	./build/main
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
