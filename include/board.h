@@ -10,6 +10,8 @@
 
 #include "piece.h"
 
+#define ROWS       8
+#define COLS       8
 #define NUM_PIECES 64
 
 typedef uint8_t Position;
