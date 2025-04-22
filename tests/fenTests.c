@@ -47,9 +47,16 @@ TEST(fenTests, testFenWhitespaceBadString) {
   TEST_ASSERT_EQUAL_INT(0, fenWhitespace("-1"));
 }
 
+TEST(fenTests, fenActiveColor) {
+  TEST_ASSERT_EQUAL_INT(0, fenActiveColor(" b"));
+  TEST_ASSERT_EQUAL_INT(1, fenActiveColor(" w"));
+  TEST_ASSERT_EQUAL_INT(1, fenActiveColor(FEN_STARTING_POSITION));
+}
+
 TEST_GROUP_RUNNER(fenTests) {
   RUN_TEST_CASE(fenTests, testStartingPosition);
   RUN_TEST_CASE(fenTests, testFenPiece);
   RUN_TEST_CASE(fenTests, testFenWhitespace);
   RUN_TEST_CASE(fenTests, testFenWhitespaceBadString);
+  RUN_TEST_CASE(fenTests, fenActiveColor);
 }

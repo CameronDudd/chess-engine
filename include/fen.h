@@ -32,7 +32,7 @@
 #include "board.h"
 #include "piece.h"
 
-#define PIECE_PLACEMENT_OFFSET 0
+#define PIECE_PLACEMENT_OFFSET    0
 #define PIECE_ACTIVE_COLOR_OFFSET 1
 
 #define FEN_STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

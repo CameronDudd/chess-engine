@@ -6,6 +6,7 @@
 #include "fen.h"
 
 Piece fenPiece(Fen *fen) {
+  // TODO (cameron): Probably faster to just switch-case all piece types
   char f = *fen;
   Piece p = PIECE_NULL;
 
@@ -52,13 +53,13 @@ int fenWhitespace(Fen *fen) {
 }
 
 int fenActiveColor(Fen *fen) {
-  int activeColor = 0, numWhiteSpace = 0;
-  while (numWhiteSpace < PIECE_ACTIVE_COLOR_OFFSET && *fen++ != '\0') {
+  int numWhiteSpace = 0;
+  do {
     if (*fen == ' ') {
       numWhiteSpace++;
     }
-  }
-  return activeColor;
+  } while (numWhiteSpace < PIECE_ACTIVE_COLOR_OFFSET && *++fen != '\0');
+  return (*++fen == 'w') ? 1 : 0;
 }
 
 void fenPopulateBoard(Fen *fen, Piece board[NUM_PIECES]) {
