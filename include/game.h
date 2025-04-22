@@ -8,11 +8,15 @@
 
 #include "board.h"
 #include "fen.h"
-#include "piece.h"
+
+typedef struct {
+  Position src;
+  Position dest;
+} Move;
 
 typedef struct {
   int activeColor;
-  Piece board[NUM_PIECES];
+  Board board;
 } Game;
 
 void initGame(Game *game, Fen *fen);
