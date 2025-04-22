@@ -3,6 +3,7 @@
  *   All rights reserved.
  */
 
+#include "board.h"
 #include "fen.h"
 
 #include <unity.h>
@@ -53,10 +54,41 @@ TEST(fenTests, fenActiveColor) {
   TEST_ASSERT_EQUAL_INT(1, fenActiveColor(FEN_STARTING_POSITION));
 }
 
+TEST(fenTests, fenPopulateBoard) {
+  Piece board[NUM_PIECES];
+  fenPopulateBoard(FEN_STARTING_POSITION, board);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_ROOK, board[0]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KNIGHT, board[1]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_BISHOP, board[2]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_QUEEN, board[3]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KING, board[4]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_BISHOP, board[5]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KNIGHT, board[6]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_ROOK, board[7]);
+  for (int i = 8; i < 16; i++) {
+    TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_PAWN, board[i]);
+  }
+  for (int i = 17; i < 48; i++) {
+    TEST_ASSERT_EQUAL_UINT8(PIECE_NULL, board[i]);
+  }
+  for (int i = 48; i < 54; i++) {
+    TEST_ASSERT_EQUAL_UINT8(PIECE_WHITE | PIECE_PAWN, board[i]);
+  }
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_ROOK, board[0]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KNIGHT, board[1]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_BISHOP, board[2]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_QUEEN, board[3]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KING, board[4]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_BISHOP, board[5]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KNIGHT, board[6]);
+  TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_ROOK, board[7]);
+}
+
 TEST_GROUP_RUNNER(fenTests) {
   RUN_TEST_CASE(fenTests, testStartingPosition);
   RUN_TEST_CASE(fenTests, testFenPiece);
   RUN_TEST_CASE(fenTests, testFenWhitespace);
   RUN_TEST_CASE(fenTests, testFenWhitespaceBadString);
   RUN_TEST_CASE(fenTests, fenActiveColor);
+  RUN_TEST_CASE(fenTests, fenPopulateBoard);
 }
