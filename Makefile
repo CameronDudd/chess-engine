@@ -35,7 +35,9 @@ INCLUDES     = -I$(INCDIR) -I/usr/include
 TESTINCLUDES = -I$(INCDIR) -I/usr/include -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)/src -I$(UNITYMEMORYDIR)/src
 
 # == Targets ==
-all: $(BUILDDIR) $(TARGET) test
+all: main test
+
+main: $(BUILDDIR) $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
