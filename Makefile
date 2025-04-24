@@ -2,7 +2,7 @@
 CC = gcc
 
 # == Flags ==
-CFLAGS  = -Wall -Wextra -O2 -std=c99 -DUNITY_OUTPUT_COLOR -DUNITY_INCLUDE_DOUBLE -DUNITY_DOUBLE_PRECISION=1e-12f
+CFLAGS  = -Wall -Wextra -g -std=c99 -DUNITY_OUTPUT_COLOR -DUNITY_INCLUDE_DOUBLE -DUNITY_DOUBLE_PRECISION=1e-12f
 LDFLAGS =
 
 # == Directories ==
@@ -37,8 +37,10 @@ TESTINCLUDES = -I$(INCDIR) -I/usr/include -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)
 # == Targets ==
 all: main test
 
+run: main
+	./$(BUILDDIR)/main
+
 main: $(BUILDDIR) $(TARGET)
-	./build/main
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
@@ -55,9 +57,9 @@ $(BUILDDIR):
 # == Unit Testing ==
 test: $(BUILDDIR)
 	$(CC) $(CFLAGS) $(TESTINCLUDES) $(SRCTEST) $(SRCTESTS) -o $(TARGETTEST)
-	./$(TARGETTEST)
 
-tests: test
+run-tests: test
+	./$(TARGETTEST)
 
 # == Clean ==
 clean:
