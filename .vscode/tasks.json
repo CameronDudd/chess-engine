@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Make main",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "main"
+      ],
+      "group": "main",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Make tests",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "test"
+      ],
+      "group": "test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
