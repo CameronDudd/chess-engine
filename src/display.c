@@ -4,52 +4,50 @@
  */
 
 #include "display.h"
+#include "board.h"
 #include "piece.h"
 
 #include <stdio.h>
 
 void displayBoard(const Board *board) {
-  printf("+---+---+---+---+---+---+---+---+\n");
   for (Position row = 0; row < ROWS; ++row) {
-    printf("|");
     for (Position col = 0; col < COLS; ++col) {
-      Piece p = (*board)[(row * 8) + col];
-      printf(" %s |", pieceStr(&p));
+      Piece p = (*board)[(row * COLS) + col];
+      const char *bg = ((row + col) % 2) ? "\033[100m" : "\033[47m";
+      printf("%s %s \033[0m", bg, pieceStr(&p));
     }
-    printf("\n+---+---+---+---+---+---+---+---+\n");
+    printf("\n");
   }
 }
 
 void displaySelectedPieces(const Board *board, const Piece *selectedPiece) {
-  printf("+---+---+---+---+---+---+---+---+\n");
   for (Position row = 0; row < ROWS; ++row) {
-    printf("|");
     for (Position col = 0; col < COLS; ++col) {
-      Piece p = (*board)[(row * 8) + col];
+      Piece p = (*board)[(row * COLS) + col];
+      const char *bg = ((row + col) % 2) ? "\033[100m" : "\033[47m";
       if (p == *selectedPiece) {
-        printf("(%s)|", pieceStr(&p));
+        printf("%s(%s)\033[0m", bg, pieceStr(&p));
       } else {
-        printf(" %s |", pieceStr(&p));
+        printf("%s %s \033[0m", bg, pieceStr(&p));
       }
     }
-    printf("\n+---+---+---+---+---+---+---+---+\n");
+    printf("\n");
   }
 }
 
 void displaySelectedPosition(const Board *board,
                              const Position *selectedPosition) {
-  printf("+---+---+---+---+---+---+---+---+\n");
   for (Position row = 0; row < ROWS; ++row) {
-    printf("|");
     for (Position col = 0; col < COLS; ++col) {
-      Position position = (row * 8) + col;
+      Position position = (row * COLS) + col;
       Piece piece = (*board)[position];
+      const char *bg = ((row + col) % 2) ? "\033[100m" : "\033[47m";
       if (position == *selectedPosition) {
-        printf("(%s)|", pieceStr(&piece));
+        printf("%s(%s)\033[0m", bg, pieceStr(&piece));
       } else {
-        printf(" %s |", pieceStr(&piece));
+        printf("%s %s \033[0m", bg, pieceStr(&piece));
       }
     }
-    printf("\n+---+---+---+---+---+---+---+---+\n");
+    printf("\n");
   }
 }
