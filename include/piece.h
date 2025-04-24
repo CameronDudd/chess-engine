@@ -28,16 +28,17 @@
 // 4-K 5-Q 6-R 7-B 8-N 9-P A-k B-q C-r D-b E-n F-p
 
 typedef uint8_t Piece;
-
-#define PIECE_NULL   (Piece)0b00000000
-#define PIECE_WHITE  (Piece)0b00000001
-#define PIECE_BLACK  (Piece)0b00000010
-#define PIECE_PAWN   (Piece)0b00000100
-#define PIECE_KNIGHT (Piece)0b00001000
-#define PIECE_BISHOP (Piece)0b00010000
-#define PIECE_ROOK   (Piece)0b00100000
-#define PIECE_QUEEN  (Piece)0b01000000
-#define PIECE_KING   (Piece)0b10000000
+#define PIECE_NULL       (Piece)0b00000000
+#define PIECE_WHITE      (Piece)0b00000001
+#define PIECE_BLACK      (Piece)0b00000010
+#define PIECE_PAWN       (Piece)0b00000100
+#define PIECE_KNIGHT     (Piece)0b00001000
+#define PIECE_BISHOP     (Piece)0b00010000
+#define PIECE_ROOK       (Piece)0b00100000
+#define PIECE_QUEEN      (Piece)0b01000000
+#define PIECE_KING       (Piece)0b10000000
+#define PIECE_TYPE_MASK  (Piece)0b11111100
+#define PIECE_COLOR_MASK (Piece)0b00000011
 
 const char *pieceStr(const Piece *piece);
 
