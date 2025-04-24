@@ -19,6 +19,6 @@ int main(int argc, char *argv[]) {
 
   Game game;
   initGame(&game, FEN_STARTING_POSITION);
-  displayBoard(&game.board);
+  displayBoard(game.board);
   return 0;
 }
