@@ -8,8 +8,8 @@
 
 #include "board.h"
 
-void displayBoard(const Board *board);
-void displaySelectedPieces(const Board *board, const Piece *selectedPiece);
-void displaySelectedPosition(const Board *board, const Position *selectedPosition);
+void displayBoard(const Board board);
+void displaySelectedPieces(const Board board, const Piece *selectedPiece);
+void displaySelectedPosition(const Board board, const Position *selectedPosition);
 
 #endif  // DISPLAY_H
