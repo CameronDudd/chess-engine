@@ -32,16 +32,20 @@
 #include "board.h"
 #include "piece.h"
 
-#define PIECE_PLACEMENT_OFFSET    0
-#define PIECE_ACTIVE_COLOR_OFFSET 1
-
 #define FEN_STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 typedef const char Fen;
 
+typedef enum {
+  PIECE_PLACEMENT_OFFSET    = 0,
+  PIECE_ACTIVE_COLOR_OFFSET = 1,
+  CASTLING_FLAGS_OFFSET     = 2,
+} FenWhitespaceOffsets;
+
 Piece fenPiece(const char *p);
-int fenWhitespace(Fen *fen);
-int fenActiveColor(Fen *fen);
-void fenPopulateBoard(Fen *fen, Piece board[NUM_PIECES]);
+uint8_t fenWhitespace(const Fen *fen);
+uint8_t fenActiveColor(const Fen *fen);
+uint8_t fenCastlingBits(const Fen *fen);
+void fenPopulateBoard(const Fen *fen, Board board);
 
 #endif  // FEN_H

@@ -4,65 +4,70 @@
  */
 
 #include "fen.h"
+#include "piece.h"
 
-Piece fenPiece(Fen *fen) {
-  // TODO (cameron): Probably faster to just switch-case all piece types
-  char f = *fen;
-  Piece p = PIECE_NULL;
-
-  // Determine color
-  if ('a' <= f && f <= 'z') {
-    p |= PIECE_BLACK;
-  } else if ('A' <= f && f <= 'Z') {
-    f = 'a' + (f - 'A'); // to lower case
-    p |= PIECE_WHITE;
-  } else {
-    return p;
-  }
-
-  // Determine type
-  switch (f) {
-  case 'p':
-    p |= PIECE_PAWN;
-    break;
-  case 'r':
-    p |= PIECE_ROOK;
-    break;
-  case 'n':
-    p |= PIECE_KNIGHT;
-    break;
-  case 'b':
-    p |= PIECE_BISHOP;
-    break;
-  case 'q':
-    p |= PIECE_QUEEN;
-    break;
-  case 'k':
-    p |= PIECE_KING;
-    break;
-  }
-
-  return p;
+static void _offsetToSectionOfInterest(const Fen **fen,
+                                       FenWhitespaceOffsets offset) {
+  uint8_t numWhiteSpace = 0;
+  while (numWhiteSpace < offset && **fen != '\0') {
+    if (**fen == ' ') {
+      numWhiteSpace++;
+    }
+    (*fen)++;
+  };
 }
 
-int fenWhitespace(Fen *fen) {
+Piece fenPiece(Fen *fen) {
+  switch (*fen) {
+  case 'r':
+    return PIECE_BLACK | PIECE_ROOK;
+  case 'n':
+    return PIECE_BLACK | PIECE_KNIGHT;
+  case 'b':
+    return PIECE_BLACK | PIECE_BISHOP;
+  case 'q':
+    return PIECE_BLACK | PIECE_QUEEN;
+  case 'k':
+    return PIECE_BLACK | PIECE_KING;
+  case 'p':
+    return PIECE_BLACK | PIECE_PAWN;
+  case 'R':
+    return PIECE_WHITE | PIECE_ROOK;
+  case 'N':
+    return PIECE_WHITE | PIECE_KNIGHT;
+  case 'B':
+    return PIECE_WHITE | PIECE_BISHOP;
+  case 'Q':
+    return PIECE_WHITE | PIECE_QUEEN;
+  case 'K':
+    return PIECE_WHITE | PIECE_KING;
+  case 'P':
+    return PIECE_WHITE | PIECE_PAWN;
+  default:
+    return PIECE_NULL;
+  }
+}
+
+uint8_t fenWhitespace(const Fen *fen) {
   if ('0' <= *fen && *fen <= '9') {
     return *fen - '0';
   }
   return 0;
 }
 
-int fenActiveColor(Fen *fen) {
-  int numWhiteSpace = 0;
-  do {
-    if (*fen == ' ') {
-      numWhiteSpace++;
-    }
-  } while (numWhiteSpace < PIECE_ACTIVE_COLOR_OFFSET && *++fen != '\0');
-  return (*++fen == 'w') ? 1 : 0;
+uint8_t fenActiveColor(const Fen *fen) {
+  _offsetToSectionOfInterest(&fen, PIECE_ACTIVE_COLOR_OFFSET);
+  return (*fen == 'w') ? 1 : 0;
 }
 
-void fenPopulateBoard(Fen *fen, Piece board[NUM_PIECES]) {
+uint8_t fenCastlingBits(const Fen *fen) { // TODO (cameron):
+  _offsetToSectionOfInterest(&fen, CASTLING_FLAGS_OFFSET);
+  uint8_t castlingBits = 0;
+  return castlingBits;
+}
+
+void fenPopulateBoard(const Fen *fen, Board board) {
+  _offsetToSectionOfInterest(&fen, PIECE_PLACEMENT_OFFSET);
   do {
     if (('a' <= *fen && *fen <= 'z') || ('A' <= *fen && *fen <= 'Z')) {
       *board++ = fenPiece(fen);
