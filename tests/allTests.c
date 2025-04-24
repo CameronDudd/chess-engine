@@ -17,15 +17,24 @@ static double deltaMs(struct timespec start, struct timespec end) {
 static void _runAllTests(void) {
   struct timespec start, end;
 
+  // FEN
   printf("\nFEN Tests: ");
   clock_gettime(CLOCK_MONOTONIC, &start);
   RUN_TEST_GROUP(fenTests);
   clock_gettime(CLOCK_MONOTONIC, &end);
   printf(" (%.3f us)", deltaMs(start, end));
 
+  // PIECE
   printf("\nPiece Tests: ");
   clock_gettime(CLOCK_MONOTONIC, &start);
   RUN_TEST_GROUP(pieceTests);
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  printf(" (%.3f us)", deltaMs(start, end));
+
+  // EVALUATION
+  printf("\nEvaluation Tests: ");
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  RUN_TEST_GROUP(evaluationTests);
   clock_gettime(CLOCK_MONOTONIC, &end);
   printf(" (%.3f us)", deltaMs(start, end));
 }
