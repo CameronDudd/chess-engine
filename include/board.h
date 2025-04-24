@@ -14,7 +14,7 @@
 #define COLS       8
 #define NUM_PIECES 64
 
-typedef uint8_t Position;
+typedef uint8_t Position;  // 0 top-left to 63 bottom-right
 typedef Piece Board[NUM_PIECES];
 
 #endif  // BOARD_H
