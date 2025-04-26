@@ -15,12 +15,10 @@ static int pieceMSBOffset(const Piece *piece) {
 }
 
 const char *pieceStr(const Piece *piece) {
-  static const char *symbols[] = {"♚", "♛", "♜", "♝", "♞", "♟",
-                                  "♔", "♕", "♖", "♗", "♘", "♙"};
+  static const char *symbols[] = {"♚", "♛", "♜", "♝", "♞", "♟"};
+  // static const char *symbols[] = {"♔", "♕", "♖", "♗", "♘", "♙"};
   if (*piece == PIECE_NULL) {
     return " ";
   }
-  int index = (*piece & PIECE_WHITE) ? 0 : 6;
-  index += pieceMSBOffset(piece);
-  return symbols[index];
+  return symbols[pieceMSBOffset(piece)];
 }
