@@ -2,7 +2,7 @@
 CC = gcc
 
 # == Flags ==
-CFLAGS  = -Wall -Wextra -g -std=c99 -DUNITY_OUTPUT_COLOR -DUNITY_INCLUDE_DOUBLE -DUNITY_DOUBLE_PRECISION=1e-12f
+CFLAGS  = -Wall -Wextra -g -std=c99 -DLOG_USE_COLOR -DUNITY_OUTPUT_COLOR -DUNITY_INCLUDE_DOUBLE -DUNITY_DOUBLE_PRECISION=1e-12f
 LDFLAGS =
 
 # == Directories ==
@@ -12,6 +12,7 @@ BUILDDIR        = build
 LIBDIR          = lib
 TESTDIR         = tests
 UNITYDIR        = $(LIBDIR)/Unity
+LOGLIBDIR       = $(LIBDIR)/log.c/src
 UNITYMEMORYDIR  = $(UNITYDIR)/extras/memory
 UNITYFIXTUREDIR = $(UNITYDIR)/extras/fixture
 
@@ -20,7 +21,7 @@ TARGET     = $(BUILDDIR)/main
 TARGETTEST = $(BUILDDIR)/test
 
 # == Sources ==
-SRC = $(wildcard $(SRCDIR)/*.c)
+SRC = $(wildcard $(SRCDIR)/*.c) $(wildcard $(LOGLIBDIR)/*.c)
 SRCTEST = $(filter-out $(SRCDIR)/main.c, $(SRC))
 SRCTESTS = $(wildcard $(TESTDIR)/*.c) \
 		   $(wildcard $(UNITYDIR)/src/*.c) \
@@ -28,11 +29,11 @@ SRCTESTS = $(wildcard $(TESTDIR)/*.c) \
 		   $(wildcard $(UNITYMEMORYDIR)/src/*.c)
 
 # == Object files ==
-OBJ = $(patsubst %.c, $(BUILDDIR)/%.o, $(subst $(SRCDIR)/,,$(SRC)))
+OBJ = $(patsubst %.c, $(BUILDDIR)/%.o, $(SRC))
 
 # == Includes ==
-INCLUDES     = -I$(INCDIR) -I/usr/include
-TESTINCLUDES = -I$(INCDIR) -I/usr/include -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)/src -I$(UNITYMEMORYDIR)/src
+INCLUDES     = -I$(INCDIR) -I/usr/include -I$(LOGLIBDIR)
+TESTINCLUDES = $(INCLUDES) -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)/src -I$(UNITYMEMORYDIR)/src
 
 # == Targets ==
 all: main test
@@ -45,8 +46,7 @@ main: $(BUILDDIR) $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
 
-# == Object Compilation Rules ==
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+$(BUILDDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
