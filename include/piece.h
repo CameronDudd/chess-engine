@@ -40,6 +40,27 @@ typedef uint8_t Piece;
 #define PIECE_TYPE_MASK  (Piece)0b11111100
 #define PIECE_COLOR_MASK (Piece)0b00000011
 
+// Used to create the keys for tables for things like move, bitboards etc
+#define MIN_PIECE_KEY     0
+#define MAX_PIECE_KEY     11
+#define NUM_UNIQUE_PIECES 12
+
+// Must always start from zero and go in ascending order
+typedef enum {
+  BLACK_PAWN_KEY   = 0,  // MIN_PIECE_KEY
+  BLACK_KNIGHT_KEY = 1,
+  BLACK_BISHOP_KEY = 2,
+  BLACK_ROOK_KEY   = 3,
+  BLACK_QUEEN_KEY  = 4,
+  BLACK_KING_KEY   = 5,
+  WHITE_PAWN_KEY   = 6,
+  WHITE_KNIGHT_KEY = 7,
+  WHITE_BISHOP_KEY = 8,
+  WHITE_ROOK_KEY   = 9,
+  WHITE_QUEEN_KEY  = 10,
+  WHITE_KING_KEY   = 11,  // MAX_PIECE_KEY
+} PieceLookupKey;
+
 const char *pieceStr(const Piece *piece);
 
 #endif  // PIECE_H
