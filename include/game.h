@@ -6,7 +6,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "board.h"
 #include "fen.h"
 
 typedef enum {
@@ -16,11 +15,6 @@ typedef enum {
   BLACK_KINGSIDE_CASTLE_BIT  = 3,  // 1 if black can castle king-side else 0
   BLACK_QUEENSIDE_CASTLE_BIT = 4,  // 1 if black can castle queen-side else 0
 } GameStateBitOffsets;
-
-typedef struct {
-  Position src;
-  Position dest;
-} Move;
 
 typedef struct {
   Board board;
