@@ -9,12 +9,29 @@
 
 #include <stdio.h>
 
+static const char *_rgbEscapeStringForeground(uint8_t r, uint8_t g, uint8_t b) {
+  static char fgBuff[30];
+  snprintf(fgBuff, sizeof(fgBuff), "\033[38;2;%i;%i;%im", r, g, b);
+  return fgBuff;
+}
+
+static const char *_rgbEscapeStringBackground(uint8_t r, uint8_t g, uint8_t b) {
+  static char bgBuff[30];
+  snprintf(bgBuff, sizeof(bgBuff), "\033[48;2;%i;%i;%im", r, g, b);
+  return bgBuff;
+}
+
 void displayBoard(const Board board) {
   for (Position row = 0; row < ROWS; ++row) {
     for (Position col = 0; col < COLS; ++col) {
       Piece p = board[(row * COLS) + col];
-      const char *bg = ((row + col) % 2) ? "\033[100m" : "\033[47m";
-      printf("%s %s \033[0m", bg, pieceStr(&p));
+      const char *pieceColor = (p & PIECE_WHITE)
+                                   ? _rgbEscapeStringForeground(255, 255, 255)
+                                   : _rgbEscapeStringForeground(0, 0, 0);
+      const char *boardColor = ((row + col) % 2)
+                                   ? _rgbEscapeStringBackground(181, 136, 99)
+                                   : _rgbEscapeStringBackground(240, 217, 181);
+      printf("%s%s %s \033[0m", pieceColor, boardColor, pieceStr(&p));
     }
     printf("\n");
   }
