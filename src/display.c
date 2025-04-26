@@ -22,7 +22,9 @@ static const char *_rgbEscapeStringBackground(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void displayBoard(const Board board) {
+  printf("\n");
   for (Position row = 0; row < ROWS; ++row) {
+    printf("%i ", ROWS - row);
     for (Position col = 0; col < COLS; ++col) {
       Piece p = board[(row * COLS) + col];
       const char *pieceColor = (p & PIECE_WHITE)
@@ -35,10 +37,13 @@ void displayBoard(const Board board) {
     }
     printf("\n");
   }
+  printf("   A  B  C  D  E  F  G  H\n");
 }
 
 void displaySelectedPieces(const Board board, const Piece *selectedPiece) {
+  printf("\n");
   for (Position row = 0; row < ROWS; ++row) {
+    printf("%i ", ROWS - row);
     for (Position col = 0; col < COLS; ++col) {
       Piece p = board[(row * COLS) + col];
       const char *pieceColor = (p & PIECE_WHITE)
@@ -55,11 +60,14 @@ void displaySelectedPieces(const Board board, const Piece *selectedPiece) {
     }
     printf("\n");
   }
+  printf("   A  B  C  D  E  F  G  H\n");
 }
 
 void displaySelectedPosition(const Board board,
                              const Position *selectedPosition) {
+  printf("\n");
   for (Position row = 0; row < ROWS; ++row) {
+    printf("%i ", ROWS - row);
     for (Position col = 0; col < COLS; ++col) {
       Position position = (row * COLS) + col;
       Piece p = board[position];
@@ -77,4 +85,5 @@ void displaySelectedPosition(const Board board,
     }
     printf("\n");
   }
+  printf("   A  B  C  D  E  F  G  H\n");
 }
