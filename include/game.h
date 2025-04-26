@@ -22,5 +22,6 @@ typedef struct {
 } Game;
 
 void initGame(Game *game, Fen *fen);
+int activeTurn(Game *game);
 
 #endif  // GAME_H
