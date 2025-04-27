@@ -9,7 +9,7 @@
 #include <log.h>
 #include <stdlib.h>
 
-uint64_t pieceBitBoards[NUM_UNIQUE_PIECES] = {
+BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
@@ -65,7 +65,26 @@ void initBitBoards(Board board) {
 }
 
 void makeMove(Board board, const Move *move) {
-  board[move->dst] = board[move->src];
+  // Update the board
+  Piece pieceToMove = board[move->src];
+  Piece pieceToTake = board[move->dst];
+
+  // Update moving piece bit board
+  pieceBitBoards[_piece2lookup(pieceToMove)] &=
+      ~((uint64_t)1 << move->src); // Remove old position
+  pieceBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << move->dst);
+
+  // Update taken piece bit board
+  if (pieceToTake != PIECE_NULL) {
+    pieceBitBoards[_piece2lookup(pieceToTake)] &=
+        ~((uint64_t)1 << move->dst); // Remove taken piece bitboard
+  }
+
+  // TODO (cameron): Detect castling to also update rook bitboard
+
+  // TODO (cameron): Detect en passant for bitboard update
+
+  board[move->dst] = pieceToMove;
   board[move->src] = PIECE_NULL;
 }
 
