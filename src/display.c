@@ -40,7 +40,7 @@ void displayBoard(const Board board) {
   printf("   A  B  C  D  E  F  G  H\n");
 }
 
-void displayPieceBitBoard(const Board board, const BitBoard bitBoard) {
+void displayBitBoard(const Board board, const BitBoard bitBoard) {
   printf("\n");
   for (Position row = 0; row < ROWS; ++row) {
     printf("%i ", ROWS - row);

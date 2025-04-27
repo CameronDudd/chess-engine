@@ -9,7 +9,7 @@
 #include "board.h"
 
 void displayBoard(const Board board);
-void displayPieceBitBoard(const Board board, const BitBoard bitBoard);
+void displayBitBoard(const Board board, const BitBoard bitBoard);
 void displaySelectedPieces(const Board board, const Piece *selectedPiece);
 void displaySelectedPosition(const Board board, const Position *selectedPosition);
 
