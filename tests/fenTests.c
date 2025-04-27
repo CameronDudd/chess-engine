@@ -55,7 +55,7 @@ TEST(fenTests, fenActiveColor) {
 }
 
 TEST(fenTests, fenPopulateBoard) {
-  Piece board[NUM_PIECES];
+  Piece board[NUM_POSITIONS];
   fenPopulateBoard(FEN_STARTING_POSITION, board);
   TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_ROOK, board[0]);
   TEST_ASSERT_EQUAL_UINT8(PIECE_BLACK | PIECE_KNIGHT, board[1]);
