@@ -27,8 +27,8 @@ static PieceValue pieceValue(Piece *piece) {
 int evaluate(Board board) {
   unsigned int blackEval = 0;
   unsigned int whiteEval = 0;
-  for (int i = 0; i < NUM_PIECES; ++i) {
-    Piece p = board[i];
+  for (Position position = 0; position < NUM_POSITIONS; ++position) {
+    Piece p = board[position];
     if ((p & PIECE_BLACK) > 0) {
       blackEval += pieceValue(&p);
     } else {
