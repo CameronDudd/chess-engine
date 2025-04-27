@@ -65,24 +65,49 @@ void initBitBoards(Board board) {
 }
 
 void makeMove(Board board, const Move *move) {
-  // Update the board
   Piece pieceToMove = board[move->src];
   Piece pieceToTake = board[move->dst];
 
+  // Detect en passant for bitboard update
+  // NOTE (cameron): Only check if pawn is moving diagonally to an empty square,
+  // trust the move generation to ensure that it's a legal en passant
+  Direction direction = move->dst - move->src;
+  if ((pieceToMove == (PIECE_BLACK | PIECE_PAWN)) &&
+      (pieceToTake == PIECE_NULL)) {
+    if (direction == BACKWARD_LEFT) {
+      pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &=
+          ~((uint64_t)1 << (move->src - 1));
+      board[move->src - 1] = PIECE_NULL;
+
+    } else if (direction == BACKWARD_RIGHT) {
+      pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &=
+          ~((uint64_t)1 << (move->src + 1));
+      board[move->src + 1] = PIECE_NULL;
+    }
+  } else if ((pieceToMove == (PIECE_WHITE | PIECE_PAWN)) &&
+             (pieceToTake == PIECE_NULL)) {
+    if (direction == FORWARD_LEFT) {
+      pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &=
+          ~((uint64_t)1 << (move->src - 1));
+      board[move->src - 1] = PIECE_NULL;
+
+    } else if (direction == FORWARD_RIGHT) {
+      pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &=
+          ~((uint64_t)1 << (move->src + 1));
+      board[move->src + 1] = PIECE_NULL;
+    }
+  }
+
+  // TODO (cameron): Detect castling
+
   // Update moving piece bit board
-  pieceBitBoards[_piece2lookup(pieceToMove)] &=
-      ~((uint64_t)1 << move->src); // Remove old position
+  pieceBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << move->src);
   pieceBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << move->dst);
 
   // Update taken piece bit board
   if (pieceToTake != PIECE_NULL) {
-    pieceBitBoards[_piece2lookup(pieceToTake)] &=
-        ~((uint64_t)1 << move->dst); // Remove taken piece bitboard
+    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << move->src);
   }
-
-  // TODO (cameron): Detect castling to also update rook bitboard
-
-  // TODO (cameron): Detect en passant for bitboard update
 
   board[move->dst] = pieceToMove;
   board[move->src] = PIECE_NULL;
