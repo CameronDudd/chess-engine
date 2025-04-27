@@ -37,6 +37,13 @@ static void _runAllTests(void) {
   RUN_TEST_GROUP(evaluationTests);
   clock_gettime(CLOCK_MONOTONIC, &end);
   printf(" (%.3f us)", deltaMs(start, end));
+
+  // BOARD
+  printf("\nBoard Tests: ");
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  RUN_TEST_GROUP(boardTests);
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  printf(" (%.3f us)", deltaMs(start, end));
 }
 
 int main(int argc, const char *argv[]) {
