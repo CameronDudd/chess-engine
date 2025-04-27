@@ -25,6 +25,7 @@ typedef struct {
   Position dst;
 } Move;
 
+void clearBoard(Board board);
 void initBitBoards(Board board);
 void makeMove(Board board, const Move *move);
 void strMakeMove(Board board, const char *moveStr);

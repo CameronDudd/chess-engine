@@ -48,6 +48,12 @@ static PieceLookupKey _piece2lookup(Piece piece) {
   }
 }
 
+void clearBoard(Board board) {
+  for (Position position = 0; position < NUM_POSITIONS; ++position) {
+    board[position] = 0;
+  }
+}
+
 void initBitBoards(Board board) {
   for (Position position = 0; position < NUM_POSITIONS; ++position) {
     Piece piece = board[position];
