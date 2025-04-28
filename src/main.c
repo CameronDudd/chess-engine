@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
   Game game;
   initGame(&game, FEN_STARTING_POSITION);
   initBitBoards(game.board);
+  initDistanceToEdgeLookup();
 
   // Main
   displayBoard(game.board);

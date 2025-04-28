@@ -7,7 +7,15 @@
 #include "piece.h"
 
 #include <log.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
+
+static const Direction _directions[NUM_DIRECTIONS] = {
+    FORWARD,  FORWARD_RIGHT, RIGHT, BACKWARD_RIGHT,
+    BACKWARD, BACKWARD_LEFT, LEFT,  FORWARD_LEFT};
+
+int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS] = {0};
 
 BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
@@ -60,6 +68,59 @@ void initBitBoards(Board board) {
     if (piece != PIECE_NULL) {
       PieceLookupKey lookupKey = _piece2lookup(piece);
       pieceBitBoards[lookupKey] |= ((uint64_t)1 << position);
+    }
+  }
+}
+
+void initDistanceToEdgeLookup() {
+  for (Position position = 0; position < NUM_POSITIONS; ++position) {
+    for (size_t i = 0; i < sizeof(_directions) / sizeof(_directions[0]); ++i) {
+      int dRow = 0;
+      int dCol = 0;
+      Direction direction = _directions[i];
+      switch (direction) {
+      case FORWARD:
+        dRow = -1;
+        dCol = 0;
+        break;
+      case FORWARD_RIGHT:
+        dRow = -1;
+        dCol = 1;
+        break;
+      case RIGHT:
+        dRow = 0;
+        dCol = 1;
+        break;
+      case BACKWARD_RIGHT:
+        dRow = 1;
+        dCol = 1;
+        break;
+      case BACKWARD:
+        dRow = 1;
+        dCol = 0;
+        break;
+      case BACKWARD_LEFT:
+        dRow = 1;
+        dCol = -1;
+        break;
+      case LEFT:
+        dRow = 0;
+        dCol = -1;
+        break;
+      case FORWARD_LEFT:
+        dRow = -1;
+        dCol = -1;
+        break;
+      }
+      int steps = 0;
+      int row = (position / 8) + dRow;
+      int col = (position % 8) + dCol;
+      while (0 <= row && row < 8 && 0 <= col && col < 8) {
+        row += dRow;
+        col += dCol;
+        steps++;
+      }
+      distanceToEdgeLookup[position][direction] = steps;
     }
   }
 }
