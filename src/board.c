@@ -106,7 +106,7 @@ void makeMove(Board board, const Move *move) {
 
   // Update taken piece bit board
   if (pieceToTake != PIECE_NULL) {
-    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << move->src);
+    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << move->dst);
   }
 
   board[move->dst] = pieceToMove;
