@@ -6,6 +6,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "board.h"
 #include "fen.h"
 
 typedef enum {
@@ -18,6 +19,7 @@ typedef enum {
 
 typedef struct {
   Board board;
+  MoveList moveList;
   uint8_t state;
 } Game;
 
