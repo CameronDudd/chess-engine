@@ -14,6 +14,4 @@ void initGame(Game *game, Fen *fen) {
   fenPopulateBoard(fen, game->board);
 }
 
-int activeTurn(Game *game) {
-  return ((game->state & (1 << ACTIVE_COLOR_BIT)) == 0) ? 0 : 1;
-}
+int activeTurn(Game *game) { return game->state & (1 << ACTIVE_COLOR_BIT); }
