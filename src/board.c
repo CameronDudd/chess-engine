@@ -8,12 +8,13 @@
 
 #include <log.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static const Direction _directions[NUM_DIRECTIONS] = {
-    FORWARD,  FORWARD_RIGHT, RIGHT, BACKWARD_RIGHT,
-    BACKWARD, BACKWARD_LEFT, LEFT,  FORWARD_LEFT};
+    FORWARD,       BACKWARD,       LEFT,          RIGHT,
+    FORWARD_RIGHT, BACKWARD_RIGHT, BACKWARD_LEFT, FORWARD_LEFT};
 
 int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS] = {0};
 
@@ -23,6 +24,68 @@ BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
 };
+
+static char *_piece2str(const Piece *piece) __attribute__((unused));
+static char *_piece2str(const Piece *piece) {
+  static char str[100] = {'\0'};
+  memset(str, '\0', 100);
+  switch (*piece) {
+  case PIECE_BLACK | PIECE_ROOK:
+    strcpy(str, "BLACK ROOK");
+    break;
+  case PIECE_BLACK | PIECE_KNIGHT:
+    strcpy(str, "BLACK KNIGHT");
+    break;
+  case PIECE_BLACK | PIECE_BISHOP:
+    strcpy(str, "BLACK BISHOP");
+    break;
+  case PIECE_BLACK | PIECE_QUEEN:
+    strcpy(str, "BLACK QUEEN");
+    break;
+  case PIECE_BLACK | PIECE_KING:
+    strcpy(str, "BLACK KING");
+    break;
+  case PIECE_BLACK | PIECE_PAWN:
+    strcpy(str, "BLACK PAWN");
+    break;
+  case PIECE_WHITE | PIECE_ROOK:
+    strcpy(str, "WHITE ROOK");
+    break;
+  case PIECE_WHITE | PIECE_KNIGHT:
+    strcpy(str, "WHITE KNIGHT");
+    break;
+  case PIECE_WHITE | PIECE_BISHOP:
+    strcpy(str, "WHITE BISHOP");
+    break;
+  case PIECE_WHITE | PIECE_QUEEN:
+    strcpy(str, "WHITE QUEEN");
+    break;
+  case PIECE_WHITE | PIECE_KING:
+    strcpy(str, "WHITE KING");
+    break;
+  case PIECE_WHITE | PIECE_PAWN:
+    strcpy(str, "WHITE PAWN");
+    break;
+  default:
+    log_error("Invalid piece '%i'", piece);
+    exit(1);
+  }
+  return str;
+}
+
+static char *_move2str(const Move *move) __attribute__((unused));
+static char *_move2str(const Move *move) {
+  static char str[100] = {'\0'};
+  memset(str, '\0', 100);
+  char *s = str;
+  *s++ = 'A' + ((move->src) % 8);
+  *s++ = '1' + 7 - ((move->src) / 8);
+  strncpy(s, " -> ", 4);
+  s += 4;
+  *s++ = 'A' + ((move->dst) % 8);
+  *s++ = '1' + 7 - ((move->dst) / 8);
+  return str;
+}
 
 static PieceLookupKey _piece2lookup(Piece piece) {
   switch (piece) {
@@ -74,10 +137,12 @@ void initBitBoards(Board board) {
 
 void initDistanceToEdgeLookup() {
   for (Position position = 0; position < NUM_POSITIONS; ++position) {
-    for (size_t i = 0; i < sizeof(_directions) / sizeof(_directions[0]); ++i) {
+    for (size_t directionIdx = 0;
+         directionIdx < sizeof(_directions) / sizeof(_directions[0]);
+         ++directionIdx) {
       int dRow = 0;
       int dCol = 0;
-      Direction direction = _directions[i];
+      Direction direction = _directions[directionIdx];
       switch (direction) {
       case FORWARD:
         dRow = -1;
@@ -120,7 +185,7 @@ void initDistanceToEdgeLookup() {
         col += dCol;
         steps++;
       }
-      distanceToEdgeLookup[position][direction] = steps;
+      distanceToEdgeLookup[position][directionIdx] = steps;
     }
   }
 }
@@ -185,4 +250,73 @@ void strMakeMove(Board board, const char *c) {
       .dst = (7 - (c[3] - '1')) * 8 + (7 - ('H' - c[2])),
   };
   makeMove(board, &move);
+}
+
+static void _populateSlidingMoves(Move *moves[], Board board, Position position,
+                                  Piece piece) {
+  size_t startDirectionIdx = 0;
+  size_t endDirectionIdx = sizeof(_directions) / sizeof(_directions[0]);
+
+  if (piece & PIECE_TYPE_MASK & PIECE_BISHOP) {
+    startDirectionIdx = 4;
+  } else if (piece & PIECE_TYPE_MASK & PIECE_ROOK) {
+    endDirectionIdx = 4;
+  }
+
+  for (size_t directionIdx = startDirectionIdx; directionIdx < endDirectionIdx;
+       ++directionIdx) {
+    Direction direction = _directions[directionIdx];
+    for (int steps = 1; steps <= distanceToEdgeLookup[position][directionIdx];
+         ++steps) {
+      if ((board[position + (steps * direction)] & PIECE_COLOR_MASK) ==
+          (piece & PIECE_COLOR_MASK)) {
+        break;
+      }
+      (*moves)->src = position;
+      (*moves)->dst = position + (steps * direction);
+      (*moves)++;
+    }
+  }
+}
+
+static void _populatePawnMove(Move *moves[], Board board, Position position,
+                              Piece piece) {
+  Piece pieceColor = piece & PIECE_COLOR_MASK;
+  Direction direction = (pieceColor == PIECE_BLACK) ? BACKWARD : FORWARD;
+  if (board[position + direction] == PIECE_NULL) {
+    (*moves)->src = position;
+    (*moves)->dst = position + direction;
+    (*moves)++;
+    if (((pieceColor == PIECE_BLACK) && (8 <= position && position < 16)) ||
+        ((pieceColor == PIECE_WHITE) && (48 <= position && position < 56))) {
+      (*moves)->src = position;
+      (*moves)->dst = position + (direction * 2);
+      (*moves)++;
+    }
+  }
+}
+
+void generateLegalMoves(MoveList *moveList, Board board, int activeColor) {
+  // Fill buffer with empty moves
+  for (size_t m = 0; m < MAX_CHESS_MOVES; ++m) {
+    moveList->moves[m].src = 0;
+    moveList->moves[m].dst = 0;
+  }
+  moveList->count = 0;
+
+  // Generate moves
+  Move *movesPtr = moveList->moves;
+  for (Position position = 0; position < NUM_POSITIONS; ++position) {
+    Piece piece = board[position];
+    Piece isBlack = (piece & PIECE_COLOR_MASK) == PIECE_BLACK;
+    Piece isBlackMove = (activeColor == 0);
+    if ((piece != PIECE_NULL) && (isBlack == isBlackMove)) {
+      if (piece & SLIDING_PIECE_MASK) {
+        _populateSlidingMoves(&movesPtr, board, position, piece);
+      } else if (piece & PIECE_PAWN) {
+        _populatePawnMove(&movesPtr, board, position, piece);
+      }
+    }
+  }
+  moveList->count = movesPtr - moveList->moves;
 }
