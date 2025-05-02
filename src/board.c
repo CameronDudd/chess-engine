@@ -16,6 +16,8 @@ static const Direction _directions[NUM_DIRECTIONS] = {
     FORWARD,       BACKWARD,       LEFT,          RIGHT,
     FORWARD_RIGHT, BACKWARD_RIGHT, BACKWARD_LEFT, FORWARD_LEFT};
 
+static const int _knightDirections[] = {-17, -15, -10, -6, 6, 10, 15, 17};
+
 int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS] = {0};
 
 BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
@@ -296,6 +298,28 @@ static void _populatePawnMove(Move *moves[], Board board, Position position,
   }
 }
 
+static void _populateKnightMove(Move *moves[], Board board, Position position,
+                                Piece piece) {
+  int srcRow = position / ROWS;
+  int srcCol = position % COLS;
+  for (size_t knightDirectionIdx = 0;
+       knightDirectionIdx < sizeof(_knightDirections) / sizeof(int);
+       ++knightDirectionIdx) {
+    int direction = _knightDirections[knightDirectionIdx];
+    int dstRow = (position + direction) / ROWS;
+    int dstCol = (position + direction) % COLS;
+    if (((board[position + direction] & PIECE_COLOR_MASK) ==
+         (piece & PIECE_COLOR_MASK)) ||
+        (dstRow < 0) || (dstRow > 63) || (abs(dstRow - srcRow) > 2) ||
+        (abs(dstCol - srcCol) > 2)) {
+      continue;
+    }
+    (*moves)->src = position;
+    (*moves)->dst = position + direction;
+    (*moves)++;
+  }
+}
+
 void generateLegalMoves(MoveList *moveList, Board board, int activeColor) {
   // Fill buffer with empty moves
   for (size_t m = 0; m < MAX_CHESS_MOVES; ++m) {
@@ -315,6 +339,8 @@ void generateLegalMoves(MoveList *moveList, Board board, int activeColor) {
         _populateSlidingMoves(&movesPtr, board, position, piece);
       } else if (piece & PIECE_PAWN) {
         _populatePawnMove(&movesPtr, board, position, piece);
+      } else if (piece & PIECE_KNIGHT) {
+        _populateKnightMove(&movesPtr, board, position, piece);
       }
     }
   }
