@@ -11,10 +11,11 @@
 
 #include "piece.h"
 
-#define ROWS           8
-#define COLS           8
-#define NUM_DIRECTIONS 8
-#define NUM_POSITIONS  64
+#define ROWS                8
+#define COLS                8
+#define NUM_DIRECTIONS      8
+#define NUM_PAWN_DIRECTIONS 6
+#define NUM_POSITIONS       64
 // https://www.chessprogramming.org/Encoding_Moves#MoveIndex
 // R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 // 3Q4/1Q4Q1/4Q3/2Q4R/Q4Q2/3Q4/1Q4Rp/1K1BBNNk w - - 0 1
@@ -52,7 +53,7 @@ void clearBoard(Board board);
 void initBitBoards(Board board);
 void initDistanceToEdgeLookup();
 void makeMove(Board board, const Move *move);
-void strMakeMove(Board board, const char *moveStr);
-void generateLegalMoves(MoveList *moveList, Board board, int activeColor);
+Move strMakeMove(Board board, const char *moveStr);
+void generateLegalMoves(MoveList *moveList, Board board, int activeColor, Move *previousMove);
 
 #endif  // BOARD_H
