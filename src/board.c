@@ -17,11 +17,10 @@ static const Direction _directions[NUM_DIRECTIONS] = {
     FORWARD,       BACKWARD,       LEFT,          RIGHT,
     FORWARD_RIGHT, BACKWARD_RIGHT, BACKWARD_LEFT, FORWARD_LEFT};
 
-static const Direction _pawnDirections[NUM_PAWN_DIRECTIONS] =
-    {
-        FORWARD,  FORWARD_LEFT,  FORWARD_RIGHT,
-        BACKWARD, BACKWARD_LEFT, BACKWARD_RIGHT,
-}
+static const Direction _pawnDirections[NUM_PAWN_DIRECTIONS] = {
+    FORWARD,  FORWARD_LEFT,  FORWARD_RIGHT,
+    BACKWARD, BACKWARD_LEFT, BACKWARD_RIGHT,
+};
 
 static const int _knightDirections[] = {-17, -15, -10, -6, 6, 10, 15, 17};
 
