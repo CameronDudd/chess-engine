@@ -65,4 +65,8 @@ run-tests: test
 clean:
 	rm -rf $(BUILDDIR) $(TARGET)
 
-.PHONY: all clean test tests
+# == Stats ==
+cloc:
+	cloc $(SRCDIR) $(INCDIR) $(TESTDIR)
+
+.PHONY: all clean test tests cloc
