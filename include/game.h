@@ -19,8 +19,9 @@ typedef enum {
 
 typedef struct {
   Board board;
-  MoveList moveList;
   uint8_t state;
+  Move previousMove;
+  MoveList moveList;
 } Game;
 
 void initGame(Game *game, Fen *fen);

@@ -12,6 +12,8 @@ void initGame(Game *game, Fen *fen) {
   }
   game->state |= fenCastlingBits(fen);
   fenPopulateBoard(fen, game->board);
+  game->previousMove.dst = 0;
+  game->previousMove.src = 0;
 }
 
 int activeTurn(Game *game) { return game->state & (1 << ACTIVE_COLOR_BIT); }
