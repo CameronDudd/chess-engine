@@ -67,6 +67,6 @@ clean:
 
 # == Stats ==
 cloc:
-	cloc $(SRCDIR) $(INCDIR) $(TESTDIR)
+	cloc --md $(SRCDIR) $(INCDIR) $(TESTDIR)
 
 .PHONY: all clean test tests cloc
