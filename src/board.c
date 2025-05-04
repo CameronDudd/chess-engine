@@ -339,6 +339,7 @@ static void _populatePawnMoves(Move *moves[], Board board, Position position,
   }
   for (size_t directionIdx = startDirectionIdx; directionIdx < endDirectionIdx;
        ++directionIdx) {
+    // FIXME (cameron): shouldn't move 2 places sideways
     Direction direction = _pawnDirections[directionIdx];
     if (board[position + direction] == PIECE_NULL) {
       (*moves)->src = position;
