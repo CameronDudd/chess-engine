@@ -9,5 +9,6 @@
 #include <stdint.h>
 
 const char* uint8t2str(uint8_t num);
+const char* uint64t2str(uint64_t num);
 
 #endif  //  UTILS_H
