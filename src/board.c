@@ -5,6 +5,7 @@
 
 #include "board.h"
 #include "piece.h"
+#include "utils.h"
 
 #include <log.h>
 #include <stdbool.h>
@@ -17,9 +18,11 @@ static const Direction _directions[NUM_DIRECTIONS] = {
     FORWARD,       BACKWARD,       LEFT,          RIGHT,
     FORWARD_RIGHT, BACKWARD_RIGHT, BACKWARD_LEFT, FORWARD_LEFT};
 
-static const Direction _pawnDirections[NUM_PAWN_DIRECTIONS] = {
-    FORWARD,  FORWARD_LEFT,  FORWARD_RIGHT,
-    BACKWARD, BACKWARD_LEFT, BACKWARD_RIGHT,
+static const Direction _pawnAttackingDirections[NUM_PAWN_DIRECTIONS] = {
+    FORWARD_LEFT,
+    FORWARD_RIGHT,
+    BACKWARD_LEFT,
+    BACKWARD_RIGHT,
 };
 
 static const int _knightDirections[] = {-17, -15, -10, -6, 6, 10, 15, 17};
@@ -33,11 +36,44 @@ BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
 };
 
-static char *_piece2str(const Piece *piece) __attribute__((unused));
-static char *_piece2str(const Piece *piece) {
+static char _piece2char(const Piece piece) __attribute__((unused));
+static char _piece2char(const Piece piece) {
+  switch (piece) {
+  case PIECE_BLACK | PIECE_ROOK:
+    return 'r';
+  case PIECE_BLACK | PIECE_KNIGHT:
+    return 'n';
+  case PIECE_BLACK | PIECE_BISHOP:
+    return 'b';
+  case PIECE_BLACK | PIECE_QUEEN:
+    return 'q';
+  case PIECE_BLACK | PIECE_KING:
+    return 'k';
+  case PIECE_BLACK | PIECE_PAWN:
+    return 'p';
+  case PIECE_WHITE | PIECE_ROOK:
+    return 'R';
+  case PIECE_WHITE | PIECE_KNIGHT:
+    return 'N';
+  case PIECE_WHITE | PIECE_BISHOP:
+    return 'B';
+  case PIECE_WHITE | PIECE_QUEEN:
+    return 'Q';
+  case PIECE_WHITE | PIECE_KING:
+    return 'K';
+  case PIECE_WHITE | PIECE_PAWN:
+    return 'P';
+  default:
+    log_error("Invalid piece '%i' '%s'", piece, uint8t2str(piece));
+    exit(1);
+  }
+}
+
+static char *_piece2str(const Piece piece) __attribute__((unused));
+static char *_piece2str(const Piece piece) {
   static char str[100] = {'\0'};
   memset(str, '\0', 100);
-  switch (*piece) {
+  switch (piece) {
   case PIECE_BLACK | PIECE_ROOK:
     strcpy(str, "BLACK ROOK");
     break;
@@ -75,23 +111,57 @@ static char *_piece2str(const Piece *piece) {
     strcpy(str, "WHITE PAWN");
     break;
   default:
-    log_error("Invalid piece '%i'", piece);
+    log_error("Invalid piece '%i' '%s'", piece, uint8t2str(piece));
     exit(1);
   }
   return str;
 }
 
-static char *_move2str(const Move *move) __attribute__((unused));
-static char *_move2str(const Move *move) {
-  static char str[100] = {'\0'};
-  memset(str, '\0', 100);
+const char *move2str(const Move move, const Board board) {
+  uint8_t flag = MOVE_FLAGS(move);
+  uint8_t src = MOVE_SRC(move);
+  uint8_t dst = MOVE_DST(move);
+
+  static char str[MOVE_STRING_MAX] = {'\0'};
   char *s = str;
-  *s++ = 'A' + ((move->src) % 8);
-  *s++ = '1' + 7 - ((move->src) / 8);
-  strncpy(s, " -> ", 4);
-  s += 4;
-  *s++ = 'A' + ((move->dst) % 8);
-  *s++ = '1' + 7 - ((move->dst) / 8);
+
+  if (flag & CASTLE) {
+    if ((dst - src) > 0) {
+      strcpy(str, "O-O");
+      s += strlen("O-O");
+    } else {
+      strcpy(str, "O-O-O");
+      s += strlen("O-O-O");
+    }
+  } else {
+    Piece srcPiece = board[src];
+    if (!(srcPiece & PIECE_TYPE_MASK & PIECE_PAWN)) {
+      *s++ = _piece2char(board[src]);
+    }
+
+    // Capture
+    if (flag & CAPTURE) {
+      if (srcPiece & PIECE_TYPE_MASK & PIECE_PAWN) {
+        *s++ = 'a' + ((src) % 8);
+      }
+      *s++ = 'x';
+    }
+
+    // Target Square
+    *s++ = 'a' + ((dst) % 8);
+    *s++ = '1' + 7 - ((dst) / 8);
+  }
+
+  // Check
+  if (flag & KING_CHECK) {
+    *s++ = '+';
+  } else if (flag & KING_CHECKMATE) {
+    *s++ = '#';
+  }
+
+  // Terminate the string
+  *s++ = '\0';
+
   return str;
 }
 
@@ -122,7 +192,7 @@ static PieceLookupKey _piece2lookup(Piece piece) {
   case PIECE_WHITE | PIECE_PAWN:
     return WHITE_PAWN_KEY;
   default:
-    log_error("Invalid piece '%i'", piece);
+    log_error("Invalid piece '%i' '%s'", piece, uint8t2str(piece));
     exit(1);
   }
 }
@@ -139,6 +209,10 @@ static inline bool _isRank(int rank, Position position) {
   int rankStart = COLS * (8 - rank);
   int rankEnd = rankStart + COLS;
   return rankStart <= position && position <= rankEnd;
+}
+
+static inline bool _isBlack(Piece piece) {
+  return (piece & PIECE_COLOR_MASK) == PIECE_BLACK;
 }
 
 void clearBoard(Board board) {
@@ -212,53 +286,65 @@ void initDistanceToEdgeLookup() {
   }
 }
 
-void makeMove(Board board, const Move *move) {
-  Piece pieceToMove = board[move->src];
-  Piece pieceToTake = board[move->dst];
+void doMove(Board board, const Move move) {
+  // FIXME (cameron): update to Move means a lot of this will be easier
+  uint8_t src = MOVE_SRC(move);
+  uint8_t dst = MOVE_DST(move);
+  Piece pieceToMove = board[src];
+  Piece pieceToTake = board[dst];
 
   // Detect en passant for bitboard update
   // NOTE (cameron): Only check if pawn is moving diagonally to an empty square,
   // trust the move generation to ensure that it's a legal en passant
-  Direction direction = move->dst - move->src;
+  Direction direction = dst - src;
   if ((pieceToMove == (PIECE_BLACK | PIECE_PAWN)) &&
       (pieceToTake == PIECE_NULL)) {
     if (direction == BACKWARD_LEFT) {
       pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &=
-          ~((uint64_t)1 << (move->src - 1));
-      board[move->src - 1] = PIECE_NULL;
+          ~((uint64_t)1 << (src - 1));
+      board[src - 1] = PIECE_NULL;
 
     } else if (direction == BACKWARD_RIGHT) {
       pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &=
-          ~((uint64_t)1 << (move->src + 1));
-      board[move->src + 1] = PIECE_NULL;
+          ~((uint64_t)1 << (src + 1));
+      board[src + 1] = PIECE_NULL;
     }
   } else if ((pieceToMove == (PIECE_WHITE | PIECE_PAWN)) &&
              (pieceToTake == PIECE_NULL)) {
     if (direction == FORWARD_LEFT) {
       pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &=
-          ~((uint64_t)1 << (move->src - 1));
-      board[move->src - 1] = PIECE_NULL;
+          ~((uint64_t)1 << (src - 1));
+      board[src - 1] = PIECE_NULL;
 
     } else if (direction == FORWARD_RIGHT) {
       pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &=
-          ~((uint64_t)1 << (move->src + 1));
-      board[move->src + 1] = PIECE_NULL;
+          ~((uint64_t)1 << (src + 1));
+      board[src + 1] = PIECE_NULL;
     }
   }
 
   // TODO (cameron): Detect castling
 
   // Update moving piece bit board
-  pieceBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << move->src);
-  pieceBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << move->dst);
+  pieceBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << src);
+  pieceBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << dst);
 
   // Update taken piece bit board
   if (pieceToTake != PIECE_NULL) {
-    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << move->dst);
+    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << dst);
   }
 
-  board[move->dst] = pieceToMove;
-  board[move->src] = PIECE_NULL;
+  board[dst] = pieceToMove;
+  board[src] = PIECE_NULL;
+}
+
+// TODO (cameron): update bitboards
+void undoMove(Board board, const Move move) {
+  uint8_t src = MOVE_SRC(move);
+  uint8_t dst = MOVE_DST(move);
+  Piece tmp = board[src];
+  board[src] = board[dst];
+  board[dst] = tmp;
 }
 
 Move strMakeMove(Board board, const char *c) {
@@ -267,11 +353,9 @@ Move strMakeMove(Board board, const char *c) {
     log_error("Invalid move string '%s'", c);
     exit(1);
   }
-  Move move = {
-      .src = (7 - (c[1] - '1')) * 8 + (7 - ('H' - c[0])),
-      .dst = (7 - (c[3] - '1')) * 8 + (7 - ('H' - c[2])),
-  };
-  makeMove(board, &move);
+  Move move = MOVE_ENCODE((7 - (c[1] - '1')) * 8 + (7 - ('H' - c[0])),
+                          (7 - (c[3] - '1')) * 8 + (7 - ('H' - c[2])), 0);
+  doMove(board, move);
   return move;
 }
 
@@ -295,61 +379,64 @@ static void _populateSlidingMoves(Move *moves[], Board board, Position position,
       if (!_validPosition(dst) || _sameColor(piece, board[dst])) {
         break;
       }
-      (*moves)->src = position;
-      (*moves)->dst = position + (steps * direction);
+      **moves = MOVE_ENCODE(position, dst, 0);
       (*moves)++;
     }
   }
 }
 
 static void _populatePawnMoves(Move *moves[], Board board, Position position,
-                               Piece piece, Move *previousMove) {
-  Piece pieceIsBlack = (piece & PIECE_COLOR_MASK) == PIECE_BLACK;
+                               Piece piece, Move previousMove) {
+  Position dst;
+  Direction direction;
 
-  // En passant as black
-  if (pieceIsBlack && _isRank(4, position) && _isRank(4, previousMove->dst) &&
-      _isRank(2, previousMove->src) &&
-      (abs(position - previousMove->dst) == 1) &&
-      ((board[previousMove->dst] & PIECE_TYPE_MASK) == PIECE_PAWN)) {
-    Direction direction =
-        (position - previousMove->dst) > 0 ? BACKWARD_LEFT : BACKWARD_RIGHT;
-    (*moves)->src = position;
-    (*moves)->dst = position + direction;
+  bool isBlack = _isBlack(piece);
+  direction = isBlack ? BACKWARD : FORWARD;
+
+  // Normal move
+  dst = position + direction;
+  if (_validPosition(dst) && board[dst] == PIECE_NULL) {
+    **moves = MOVE_ENCODE(position, dst, 0);
     (*moves)++;
-  }
 
-  // En passant as white
-  if (!pieceIsBlack && _isRank(5, position) && _isRank(5, previousMove->dst) &&
-      _isRank(7, previousMove->src) &&
-      (abs(position - previousMove->dst) == 1) &&
-      ((board[previousMove->dst]) & PIECE_TYPE_MASK) == PIECE_PAWN) {
-    Direction direction =
-        (position - previousMove->dst) < 0 ? FORWARD_LEFT : FORWARD_RIGHT;
-    (*moves)->src = position;
-    (*moves)->dst = position + direction;
-    (*moves)++;
-  }
-
-  size_t startDirectionIdx = 0;
-  size_t endDirectionIdx = sizeof(_pawnDirections) / sizeof(_pawnDirections[0]);
-  if (pieceIsBlack) {
-    startDirectionIdx = 3;
-  } else {
-    endDirectionIdx = 3;
-  }
-  for (size_t directionIdx = startDirectionIdx; directionIdx < endDirectionIdx;
-       ++directionIdx) {
-    // FIXME (cameron): shouldn't move 2 places sideways
-    Direction direction = _pawnDirections[directionIdx];
-    if (board[position + direction] == PIECE_NULL) {
-      (*moves)->src = position;
-      (*moves)->dst = position + direction;
+    // Double move
+    dst += direction;
+    bool isStartRank = isBlack ? _isRank(7, position) : _isRank(2, position);
+    if (isStartRank && _validPosition(dst) && board[dst] == PIECE_NULL) {
+      **moves = MOVE_ENCODE(position, dst, 0);
       (*moves)++;
     }
-    if ((pieceIsBlack && _isRank(7, position)) ||
-        (!pieceIsBlack && _isRank(2, position))) {
-      (*moves)->src = position;
-      (*moves)->dst = position + (direction * 2);
+  }
+
+  // Attacks and en passant
+  size_t startIdx = isBlack ? 2 : 0;
+  size_t endIdx = isBlack ? 4 : 2;
+  for (size_t i = startIdx; i < endIdx; ++i) {
+    direction = _pawnAttackingDirections[i];
+    dst = position + direction;
+    if (!_validPosition(dst)) {
+      continue;
+    }
+    Piece target = board[dst];
+
+    // Normal capture
+    if ((target != PIECE_NULL) &&
+        ((target & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK))) {
+      **moves = MOVE_ENCODE(position, dst, 0);
+      (*moves)++;
+    }
+
+    // En passant
+    Position epSrc = MOVE_SRC(previousMove);
+    Position epDst = MOVE_DST(previousMove);
+    Piece epPiece = board[epDst];
+    bool isEnemyPawn =
+        ((epPiece & PIECE_TYPE_MASK) == PIECE_PAWN) &&
+        ((epPiece & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK));
+    bool movedTwoSquares = abs((int)epDst - (int)epSrc) == 16;
+    bool epTargetMatches = epDst == dst;
+    if (isEnemyPawn && movedTwoSquares && epTargetMatches) {
+      **moves = MOVE_ENCODE(position, dst, 0);
       (*moves)++;
     }
   }
@@ -363,17 +450,17 @@ static void _populateKnightMoves(Move *moves[], Board board, Position position,
        knightDirectionIdx < sizeof(_knightDirections) / sizeof(int);
        ++knightDirectionIdx) {
     int direction = _knightDirections[knightDirectionIdx];
-    int dstRow = (position + direction) / ROWS;
-    int dstCol = (position + direction) % COLS;
-    if (((board[position + direction] & PIECE_COLOR_MASK) ==
-         (piece & PIECE_COLOR_MASK)) ||
-        (dstRow < 0) || (NUM_POSITIONS <= dstRow) ||
-        (abs(dstRow - srcRow) > 2) || (abs(dstCol - srcCol) > 2)) {
-      continue;
+    Position dst = position + direction;
+    int dstRow = dst / ROWS;
+    int dstCol = dst % COLS;
+    bool canMove =
+        (board[dst] & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK);
+    bool validPosition = _validPosition(dst) && (abs(dstRow - srcRow) <= 2) &&
+                         (abs(dstCol - srcCol) <= 2);
+    if (canMove && validPosition) {
+      **moves = MOVE_ENCODE(position, dst, 0);
+      (*moves)++;
     }
-    (*moves)->src = position;
-    (*moves)->dst = position + direction;
-    (*moves)++;
   }
 }
 
@@ -381,43 +468,37 @@ static void _populateKingMoves(Move *moves[], Board board, Position position,
                                Piece piece) {
   for (size_t directionIdx = 0; directionIdx < NUM_DIRECTIONS; ++directionIdx) {
     Direction direction = _directions[directionIdx];
-    if ((board[position + direction] & PIECE_COLOR_MASK) ==
-            (piece & PIECE_COLOR_MASK) ||
-        (position + direction < 0) || (NUM_POSITIONS <= position + direction)) {
-      continue;
+    Position dst = position + direction;
+    bool canMove =
+        (board[dst] & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK);
+    bool validPosition = _validPosition(dst);
+    if (canMove & validPosition) {
+      **moves = MOVE_ENCODE(position, dst, 0);
+      (*moves)++;
     }
-    (*moves)->src = position;
-    (*moves)->dst = position + direction;
-    (*moves)++;
   }
 }
 
 void generateLegalMoves(MoveList *moveList, Board board, int activeColor,
-                        Move *previousMove) {
-  // Fill buffer with empty moves
-  for (size_t m = 0; m < MAX_CHESS_MOVES; ++m) {
-    moveList->moves[m].src = 0;
-    moveList->moves[m].dst = 0;
-  }
-  moveList->count = 0;
-
-  // Generate moves
-  Move *movesPtr = moveList->moves;
+                        Move previousMove) {
+  // FIXME (cameron): Checks
+  memset(moveList->moves, 0, sizeof(Move) * MAX_CHESS_MOVES);
+  Move *moves = moveList->moves;
   for (Position position = 0; position < NUM_POSITIONS; ++position) {
     Piece piece = board[position];
     Piece isBlack = (piece & PIECE_COLOR_MASK & PIECE_BLACK) ? 1 : 0;
     Piece isBlackMove = (activeColor == 0) ? 1 : 0;
     if ((piece != PIECE_NULL) && (isBlack == isBlackMove)) {
       if (piece & SLIDING_PIECE_MASK) {
-        _populateSlidingMoves(&movesPtr, board, position, piece);
+        _populateSlidingMoves(&moves, board, position, piece);
       } else if (piece & PIECE_PAWN) {
-        _populatePawnMoves(&movesPtr, board, position, piece, previousMove);
+        _populatePawnMoves(&moves, board, position, piece, previousMove);
       } else if (piece & PIECE_KNIGHT) {
-        _populateKnightMoves(&movesPtr, board, position, piece);
+        _populateKnightMoves(&moves, board, position, piece);
       } else if (piece & PIECE_KING) {
-        _populateKingMoves(&movesPtr, board, position, piece);
+        _populateKingMoves(&moves, board, position, piece);
       }
     }
   }
-  moveList->count = movesPtr - moveList->moves;
+  moveList->count = moves - moveList->moves;
 }
