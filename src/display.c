@@ -86,7 +86,7 @@ static void _displayLegalMoves(Position row, Position col, Piece piece,
   int positionInDst = 0;
   Position position = (row * COLS) + col;
   for (size_t t = 0; t < moveList.count; ++t) {
-    positionInDst |= (moveList.moves[t].dst == position);
+    positionInDst |= (MOVE_DST(moveList.moves[t]) == position);
   }
   if (positionInDst) {
     printf("%s%s[%s]\033[0m", getPieceColor(piece), getBoardColor(row, col),
