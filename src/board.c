@@ -376,8 +376,9 @@ static void _populateSlidingMoves(Move *moves[], Board board, Position position,
     for (int steps = 1; steps <= distanceToEdgeLookup[position][directionIdx];
          ++steps) {
       Position dst = position + (steps * direction);
-      if (!_validPosition(dst) || _sameColor(piece, board[dst])) {
-        break;
+      if (_validPosition(dst) && !_sameColor(piece, board[dst])) {
+        **moves = MOVE_ENCODE(position, dst, 0);
+        (*moves)++;
       }
       **moves = MOVE_ENCODE(position, dst, 0);
       (*moves)++;
