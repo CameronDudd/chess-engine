@@ -385,8 +385,6 @@ static void _populateSlidingMoves(Move *moves[], Board board, Position position,
         **moves = MOVE_ENCODE(position, dst, 0);
         (*moves)++;
       }
-      **moves = MOVE_ENCODE(position, dst, 0);
-      (*moves)++;
     }
   }
 }
