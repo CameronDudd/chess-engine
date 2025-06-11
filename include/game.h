@@ -20,8 +20,8 @@ typedef enum {
 typedef struct {
   Board board;
   uint8_t state;
-  Move previousMove;
-  MoveList moveList;
+  MoveList legalMoves;
+  MoveList previousMoves;
 } Game;
 
 void initGame(Game *game, Fen *fen);

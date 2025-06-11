@@ -12,7 +12,12 @@ void initGame(Game *game, Fen *fen) {
   }
   game->state |= fenCastlingBits(fen);
   fenPopulateBoard(fen, game->board);
-  game->previousMove = 0;
+  game->legalMoves.count = 0;
+  game->previousMoves.count = 0;
+  for (size_t i = 0; i < 0; ++i) {
+    game->legalMoves.moves[i] = 0;
+    game->previousMoves.moves[i] = 0;
+  }
 }
 
 int activeTurn(Game *game) { return game->state & (1 << ACTIVE_COLOR_BIT); }
