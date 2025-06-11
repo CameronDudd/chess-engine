@@ -5,6 +5,7 @@
 
 #define _POSIX_C_SOURCE 199309L
 
+#include <log.h>
 #include <stdio.h>
 #include <time.h>
 #include <unity_fixture.h>
@@ -12,6 +13,8 @@
 static double deltaMs(struct timespec start, struct timespec end) { return 1000 * 1000 * ((end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9); }
 
 static void _runAllTests(void) {
+  log_set_quiet(true);
+
   struct timespec start, end;
 
   // FEN
