@@ -117,6 +117,11 @@ static char *_piece2str(const Piece piece) {
   return str;
 }
 
+Position coordinate2pos(const char coordinate[]) {
+  // c3
+  return (8 * ('8' - coordinate[1])) + (coordinate[0] - 'a');
+}
+
 const char *move2str(const Move move, const Board board) {
   uint8_t flag = MOVE_FLAGS(move);
   uint8_t src = MOVE_SRC(move);

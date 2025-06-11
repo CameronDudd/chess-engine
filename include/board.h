@@ -65,6 +65,7 @@ typedef struct {
 extern BitBoard pieceBitBoards[NUM_UNIQUE_PIECES];
 extern int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS];
 
+Position coordinate2pos(const char coordinate[]);
 void clearBoard(Board board);
 void initBitBoards(Board board);
 void initDistanceToEdgeLookup();

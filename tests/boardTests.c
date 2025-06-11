@@ -19,6 +19,88 @@ TEST_SETUP(boardTests) { fenPopulateBoard(FEN_STARTING_POSITION, testBoard); }
 
 TEST_TEAR_DOWN(boardTests) { clearBoard(testBoard); }
 
+TEST(boardTests, testCoordinate2Pos) {
+  // ROW 1
+  TEST_ASSERT_EQUAL_INT(56, coordinate2pos("a1"));
+  TEST_ASSERT_EQUAL_INT(57, coordinate2pos("b1"));
+  TEST_ASSERT_EQUAL_INT(58, coordinate2pos("c1"));
+  TEST_ASSERT_EQUAL_INT(59, coordinate2pos("d1"));
+  TEST_ASSERT_EQUAL_INT(60, coordinate2pos("e1"));
+  TEST_ASSERT_EQUAL_INT(61, coordinate2pos("f1"));
+  TEST_ASSERT_EQUAL_INT(62, coordinate2pos("g1"));
+  TEST_ASSERT_EQUAL_INT(63, coordinate2pos("h1"));
+
+  // ROW 2
+  TEST_ASSERT_EQUAL_INT(48, coordinate2pos("a2"));
+  TEST_ASSERT_EQUAL_INT(49, coordinate2pos("b2"));
+  TEST_ASSERT_EQUAL_INT(50, coordinate2pos("c2"));
+  TEST_ASSERT_EQUAL_INT(51, coordinate2pos("d2"));
+  TEST_ASSERT_EQUAL_INT(52, coordinate2pos("e2"));
+  TEST_ASSERT_EQUAL_INT(53, coordinate2pos("f2"));
+  TEST_ASSERT_EQUAL_INT(54, coordinate2pos("g2"));
+  TEST_ASSERT_EQUAL_INT(55, coordinate2pos("h2"));
+
+  // ROW 3
+  TEST_ASSERT_EQUAL_INT(40, coordinate2pos("a3"));
+  TEST_ASSERT_EQUAL_INT(41, coordinate2pos("b3"));
+  TEST_ASSERT_EQUAL_INT(42, coordinate2pos("c3"));
+  TEST_ASSERT_EQUAL_INT(43, coordinate2pos("d3"));
+  TEST_ASSERT_EQUAL_INT(44, coordinate2pos("e3"));
+  TEST_ASSERT_EQUAL_INT(45, coordinate2pos("f3"));
+  TEST_ASSERT_EQUAL_INT(46, coordinate2pos("g3"));
+  TEST_ASSERT_EQUAL_INT(47, coordinate2pos("h3"));
+
+  // ROW 4
+  TEST_ASSERT_EQUAL_INT(32, coordinate2pos("a4"));
+  TEST_ASSERT_EQUAL_INT(33, coordinate2pos("b4"));
+  TEST_ASSERT_EQUAL_INT(34, coordinate2pos("c4"));
+  TEST_ASSERT_EQUAL_INT(35, coordinate2pos("d4"));
+  TEST_ASSERT_EQUAL_INT(36, coordinate2pos("e4"));
+  TEST_ASSERT_EQUAL_INT(37, coordinate2pos("f4"));
+  TEST_ASSERT_EQUAL_INT(38, coordinate2pos("g4"));
+  TEST_ASSERT_EQUAL_INT(39, coordinate2pos("h4"));
+
+  // ROW 5
+  TEST_ASSERT_EQUAL_INT(24, coordinate2pos("a5"));
+  TEST_ASSERT_EQUAL_INT(25, coordinate2pos("b5"));
+  TEST_ASSERT_EQUAL_INT(26, coordinate2pos("c5"));
+  TEST_ASSERT_EQUAL_INT(27, coordinate2pos("d5"));
+  TEST_ASSERT_EQUAL_INT(28, coordinate2pos("e5"));
+  TEST_ASSERT_EQUAL_INT(29, coordinate2pos("f5"));
+  TEST_ASSERT_EQUAL_INT(30, coordinate2pos("g5"));
+  TEST_ASSERT_EQUAL_INT(31, coordinate2pos("h5"));
+
+  // ROW 6
+  TEST_ASSERT_EQUAL_INT(16, coordinate2pos("a6"));
+  TEST_ASSERT_EQUAL_INT(17, coordinate2pos("b6"));
+  TEST_ASSERT_EQUAL_INT(18, coordinate2pos("c6"));
+  TEST_ASSERT_EQUAL_INT(19, coordinate2pos("d6"));
+  TEST_ASSERT_EQUAL_INT(20, coordinate2pos("e6"));
+  TEST_ASSERT_EQUAL_INT(21, coordinate2pos("f6"));
+  TEST_ASSERT_EQUAL_INT(22, coordinate2pos("g6"));
+  TEST_ASSERT_EQUAL_INT(23, coordinate2pos("h6"));
+
+  // ROW 7
+  TEST_ASSERT_EQUAL_INT(8, coordinate2pos("a7"));
+  TEST_ASSERT_EQUAL_INT(9, coordinate2pos("b7"));
+  TEST_ASSERT_EQUAL_INT(10, coordinate2pos("c7"));
+  TEST_ASSERT_EQUAL_INT(11, coordinate2pos("d7"));
+  TEST_ASSERT_EQUAL_INT(12, coordinate2pos("e7"));
+  TEST_ASSERT_EQUAL_INT(13, coordinate2pos("f7"));
+  TEST_ASSERT_EQUAL_INT(14, coordinate2pos("g7"));
+  TEST_ASSERT_EQUAL_INT(15, coordinate2pos("h7"));
+
+  // ROW 8
+  TEST_ASSERT_EQUAL_INT(0, coordinate2pos("a8"));
+  TEST_ASSERT_EQUAL_INT(1, coordinate2pos("b8"));
+  TEST_ASSERT_EQUAL_INT(2, coordinate2pos("c8"));
+  TEST_ASSERT_EQUAL_INT(3, coordinate2pos("d8"));
+  TEST_ASSERT_EQUAL_INT(4, coordinate2pos("e8"));
+  TEST_ASSERT_EQUAL_INT(5, coordinate2pos("f8"));
+  TEST_ASSERT_EQUAL_INT(6, coordinate2pos("g8"));
+  TEST_ASSERT_EQUAL_INT(7, coordinate2pos("h8"));
+}
+
 TEST(boardTests, testMoveEncode){SKIP}
 
 TEST(boardTests, testWhiteMove2Str) {
@@ -101,6 +183,7 @@ TEST(boardTests, testInitBitBoards) {
 }
 
 TEST_GROUP_RUNNER(boardTests) {
+  RUN_TEST_CASE(boardTests, testCoordinate2Pos);
   RUN_TEST_CASE(boardTests, testMoveEncode);
   RUN_TEST_CASE(boardTests, testWhiteMove2Str);
   RUN_TEST_CASE(boardTests, testMakeMove);
