@@ -59,9 +59,31 @@ TEST(perftTests, perft3) {
   TEST_ASSERT_EQUAL_UINT32(0, perft3.checkMates);
 }
 
+TEST(perftTests, perft4) {
+  struct PerftRes perft4 = perft(board, 1, 4, 0);
+  TEST_ASSERT_EQUAL_INT(4, perft4.depth);
+  TEST_ASSERT_EQUAL_UINT64(197281, perft4.nodes);
+  TEST_ASSERT_EQUAL_UINT32(1576, perft4.captures);
+  TEST_ASSERT_EQUAL_UINT32(0, perft4.castles);
+  TEST_ASSERT_EQUAL_UINT32(469, perft4.checks);
+  TEST_ASSERT_EQUAL_UINT32(8, perft4.checkMates);
+}
+
+TEST(perftTests, perft5) {
+  struct PerftRes perft5 = perft(board, 1, 5, 0);
+  TEST_ASSERT_EQUAL_INT(5, perft5.depth);
+  TEST_ASSERT_EQUAL_UINT64(4865609, perft5.nodes);
+  TEST_ASSERT_EQUAL_UINT32(82719, perft5.captures);
+  TEST_ASSERT_EQUAL_UINT32(0, perft5.castles);
+  TEST_ASSERT_EQUAL_UINT32(27351, perft5.checks);
+  TEST_ASSERT_EQUAL_UINT32(347, perft5.checkMates);
+}
+
 TEST_GROUP_RUNNER(perftTests) {
   RUN_TEST_CASE(perftTests, perft0);
   RUN_TEST_CASE(perftTests, perft1);
   RUN_TEST_CASE(perftTests, perft2);
   RUN_TEST_CASE(perftTests, perft3);
+  RUN_TEST_CASE(perftTests, perft4);
+  RUN_TEST_CASE(perftTests, perft5);
 }
