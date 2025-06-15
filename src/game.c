@@ -22,4 +22,4 @@ void initGame(Game *game, Fen *fen) {
   }
 }
 
-int activeTurn(Game *game) { return game->state & (1 << ACTIVE_COLOR_BIT); }
+int activeColor(Game *game) { return game->state & (1 << ACTIVE_COLOR_BIT); }
