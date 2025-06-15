@@ -45,7 +45,7 @@ static void _runAllTests(void) {
   clock_gettime(CLOCK_MONOTONIC, &end);
   printf(" (%.3f us)", deltaMs(start, end));
 
-  // BOARD
+  // PERFT
   printf("\nPerft Tests: ");
   clock_gettime(CLOCK_MONOTONIC, &start);
   RUN_TEST_GROUP(perftTests);
