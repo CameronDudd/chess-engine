@@ -243,8 +243,7 @@ void initBitBoards(Board board) {
   for (Position position = 0; position < NUM_POSITIONS; ++position) {
     Piece piece = board[position];
     if (piece != PIECE_NULL) {
-      PieceLookupKey lookupKey = _piece2lookup(piece);
-      pieceBitBoards[lookupKey] |= ((uint64_t)1 << position);
+      piecePositionBitBoards[_piece2lookup(piece)] |= ((uint64_t)1 << position);
     }
   }
 }
@@ -317,20 +316,20 @@ void doMove(Board board, const Move move) {
   Direction direction = dst - src;
   if ((pieceToMove == (PIECE_BLACK | PIECE_PAWN)) && (pieceToTake == PIECE_NULL)) {
     if (direction == BACKWARD_LEFT) {
-      pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
+      piecePositionBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
       board[src - 1] = PIECE_NULL;
 
     } else if (direction == BACKWARD_RIGHT) {
-      pieceBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
+      piecePositionBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
       board[src + 1] = PIECE_NULL;
     }
   } else if ((pieceToMove == (PIECE_WHITE | PIECE_PAWN)) && (pieceToTake == PIECE_NULL)) {
     if (direction == FORWARD_LEFT) {
-      pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
+      piecePositionBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
       board[src - 1] = PIECE_NULL;
 
     } else if (direction == FORWARD_RIGHT) {
-      pieceBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
+      piecePositionBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
       board[src + 1] = PIECE_NULL;
     }
   }
@@ -338,12 +337,12 @@ void doMove(Board board, const Move move) {
   // TODO (cameron): Detect castling
 
   // Update moving piece bit board
-  pieceBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << src);
-  pieceBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << dst);
+  piecePositionBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << src);
+  piecePositionBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << dst);
 
   // Update taken piece bit board
   if (pieceToTake != PIECE_NULL) {
-    pieceBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << dst);
+    piecePositionBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << dst);
   }
 
   board[dst] = pieceToMove;
@@ -370,32 +369,43 @@ Move strMakeMove(Board board, const char *c) {
 }
 
 static void _populateSlidingMoves(Move *moves[], Board board, Position position, Piece piece) {
-  log_debug("populating sliding moves");
+  uint8_t pieceType = piece & PIECE_TYPE_MASK;
+
   size_t startDirectionIdx = 0;
   size_t endDirectionIdx   = sizeof(_directions) / sizeof(_directions[0]);
 
-  if ((piece & PIECE_TYPE_MASK) == PIECE_BISHOP) {
+  if (pieceType == PIECE_BISHOP) {
     startDirectionIdx = 4;
-  } else if ((piece & PIECE_TYPE_MASK) == PIECE_ROOK) {
+  } else if (pieceType == PIECE_ROOK) {
     endDirectionIdx = 4;
   }
 
   for (size_t directionIdx = startDirectionIdx; directionIdx < endDirectionIdx; ++directionIdx) {
     Direction direction = _directions[directionIdx];
+
     for (int steps = 1; steps <= distanceToEdgeLookup[position][directionIdx]; ++steps) {
       Position dst = position + (steps * direction);
-      if (_validPosition(dst) && !_sameColor(piece, board[dst])) {
-        **moves = MOVE_ENCODE(position, dst, 0, 0);  // FIXME (cameron): move flags
+      if (!_validPosition(dst)) break;
+
+      Piece target = board[dst];
+
+      if (!_sameColor(piece, target)) {
+        pieceAttackBitBoards[_piece2lookup(piece)] |= ((uint64_t)1 << dst);  // FIXME (cameron): this won't work for attacks behind pins
+        **moves = MOVE_ENCODE(position, dst, 0, 0);                          // FIXME (cameron): move flags
         (*moves)++;
+
+        if (target != PIECE_NULL) break;
+      } else {
+        break;
       }
     }
   }
 }
 
 static void _populatePawnMoves(Move *moves[], Board board, Position position, Piece piece, Move previousMove) {
-  log_debug("populating pawn moves");
   Position dst;
   Direction direction;
+  PieceLookupKey pieceKey = _piece2lookup(piece);
 
   bool isBlack = _isBlack(piece);
   direction    = isBlack ? BACKWARD : FORWARD;
@@ -428,6 +438,7 @@ static void _populatePawnMoves(Move *moves[], Board board, Position position, Pi
 
     // Normal capture
     if ((target != PIECE_NULL) && ((target & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK))) {
+      pieceAttackBitBoards[pieceKey] |= ((uint64_t)1 << dst);
       **moves = MOVE_ENCODE(position, dst, CAPTURE, 0);  // FIXME (cameron): move flags
       (*moves)++;
     }
@@ -440,6 +451,7 @@ static void _populatePawnMoves(Move *moves[], Board board, Position position, Pi
     bool movedTwoSquares = abs((int)epDst - (int)epSrc) == 16;
     bool epTargetMatches = epDst == dst;
     if (isEnemyPawn && movedTwoSquares && epTargetMatches) {
+      pieceAttackBitBoards[pieceKey] |= ((uint64_t)1 << dst);
       **moves = MOVE_ENCODE(position, dst, EN_PASSANT, 0);  // FIXME (cameron): move flags
       (*moves)++;
     }
@@ -447,7 +459,6 @@ static void _populatePawnMoves(Move *moves[], Board board, Position position, Pi
 }
 
 static void _populateKnightMoves(Move *moves[], Board board, Position position, Piece piece) {
-  log_debug("populating knight moves");
   int srcRow = position / ROWS;
   int srcCol = position % COLS;
   for (size_t knightDirectionIdx = 0; knightDirectionIdx < sizeof(_knightDirections) / sizeof(int); ++knightDirectionIdx) {
@@ -458,6 +469,7 @@ static void _populateKnightMoves(Move *moves[], Board board, Position position, 
     bool canMove       = (board[dst] & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK);
     bool validPosition = _validPosition(dst) && (abs(dstRow - srcRow) <= 2) && (abs(dstCol - srcCol) <= 2);
     if (canMove && validPosition) {
+      pieceAttackBitBoards[_piece2lookup(piece)] |= ((uint64_t)1 << dst);
       **moves = MOVE_ENCODE(position, dst, 0, 0);  // FIXME (cameron): move flags
       (*moves)++;
     }
@@ -465,13 +477,13 @@ static void _populateKnightMoves(Move *moves[], Board board, Position position, 
 }
 
 static void _populateKingMoves(Move *moves[], Board board, Position position, Piece piece) {
-  log_debug("populating king moves");
   for (size_t directionIdx = 0; directionIdx < NUM_DIRECTIONS; ++directionIdx) {
     Direction direction = _directions[directionIdx];
     Position dst        = position + direction;
     bool canMove        = (board[dst] & PIECE_COLOR_MASK) != (piece & PIECE_COLOR_MASK);
     bool validPosition  = _validPosition(dst);
     if (canMove & validPosition) {
+      pieceAttackBitBoards[_piece2lookup(piece)] |= ((uint64_t)1 << dst);
       **moves = MOVE_ENCODE(position, dst, 0, 0);  // FIXME (cameron): move flags
       (*moves)++;
     }
@@ -488,6 +500,7 @@ void generateLegalMoves(MoveList *moveList, Board board, int activeColor, Move p
     Piece isBlack     = (piece & PIECE_COLOR_MASK & PIECE_BLACK) ? 1 : 0;
     Piece isBlackMove = (activeColor == 0) ? 1 : 0;
     if ((piece != PIECE_NULL) && (isBlack == isBlackMove)) {
+      Move *originalMovesPtr = moves;
       if (piece & SLIDING_PIECE_MASK) {
         _populateSlidingMoves(&moves, board, position, piece);
       } else if (piece & PIECE_PAWN) {
@@ -497,6 +510,7 @@ void generateLegalMoves(MoveList *moveList, Board board, int activeColor, Move p
       } else if (piece & PIECE_KING) {
         _populateKingMoves(&moves, board, position, piece);
       }
+      log_debug("found %i %s moves from %s", moves - originalMovesPtr, _piece2str(piece), pos2coordinate(position));
     }
   }
   moveList->count = moves - moveList->moves;
