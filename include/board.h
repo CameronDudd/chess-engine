@@ -31,20 +31,30 @@ typedef int Position;  // 0 top-left to 63 bottom-right
 typedef uint64_t BitBoard;
 typedef Piece Board[NUM_POSITIONS];
 
-// Field:   FLAG         DST            SRC
-// Bits:  [15 14 13 12][11 10 9 8 7 6][5 4 3 2 1 0]
-typedef uint16_t Move;
-#define _6BIT_MASK                   0x3F
-#define _4BIT_MASK                   0x0F
-#define MOVE_ENCODE(src, dst, flags) (uint16_t)((((flags) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
-#define MOVE_SRC(move)               (uint8_t)((move) & _6BIT_MASK)
-#define MOVE_DST(move)               (uint8_t)(((move) >> 6) & _6BIT_MASK)
-#define MOVE_FLAGS(move)             (uint8_t)(((move) >> 12) & _4BIT_MASK)
+typedef enum {
+  CASTLE     = 1,  // 01
+  CAPTURE    = 2,  // 10
+  EN_PASSANT = 3,  // 11
+} MoveFlag;
 
-#define CASTLE         (uint8_t)0b00000001
-#define CAPTURE        (uint8_t)0b00000010
-#define KING_CHECK     (uint8_t)0b00000100
-#define KING_CHECKMATE (uint8_t)0b00001000
+typedef enum {
+  CHECK     = 1,  // 01
+  CHECKMATE = 2,  // 10
+  // RESERVED = 3, // 11
+} CheckFlag;
+
+// Field:  CHECK  FLAG   DST            SRC
+// Bits:  [15 14][13 12][11 10 9 8 7 6][5 4 3 2 1 0]
+typedef uint16_t Move;
+#define _2BIT_MASK 0x03  // 0b00000011
+#define _4BIT_MASK 0x0F  // 0b00001111
+#define _6BIT_MASK 0x3F  // 0b00111111
+#define MOVE_ENCODE(src, dst, flag, check) \
+  (uint16_t)((((check) & _2BIT_MASK) << 14) | (((flag) & _2BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
+#define MOVE_SRC(move)   (uint8_t)((move) & _6BIT_MASK)
+#define MOVE_DST(move)   (uint8_t)(((move) >> 6) & _6BIT_MASK)
+#define MOVE_FLAG(move)  (uint8_t)(((move) >> 12) & _2BIT_MASK)
+#define MOVE_CHECK(move) (uint8_t)(((move) >> 14) & _2BIT_MASK)
 
 typedef enum {
   FORWARD        = -8,
@@ -62,9 +72,11 @@ typedef struct {
   size_t count;
 } MoveList;
 
-extern BitBoard pieceBitBoards[NUM_UNIQUE_PIECES];
+extern BitBoard piecePositionBitBoards[NUM_UNIQUE_PIECES];
+extern BitBoard pieceAttackBitBoards[NUM_UNIQUE_PIECES];
 extern int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS];
 
+BitBoard colorAttackBitBoard(int activeColor);
 Position coordinate2pos(const char coordinate[]);
 void clearBoard(Board board);
 void initBitBoards(Board board);
