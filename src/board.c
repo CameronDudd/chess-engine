@@ -128,9 +128,14 @@ static char *_piece2str(const Piece piece) {
   return str;
 }
 
-Position coordinate2pos(const char coordinate[]) {
-  // c3
-  return (8 * ('8' - coordinate[1])) + (coordinate[0] - 'a');
+Position coordinate2pos(const char coordinate[]) { return (8 * ('8' - coordinate[1])) + (coordinate[0] - 'a'); }
+
+const char *pos2coordinate(const Position pos) {
+  static char str[3] = {'\0'};
+  char *s            = str;
+  *s++               = 'a' + ((pos) % 8);
+  *s++               = '1' + 7 - ((pos) / 8);
+  return str;
 }
 
 const char *move2str(const Move move, const Board board) {
