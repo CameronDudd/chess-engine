@@ -28,10 +28,24 @@ static const int _knightDirections[] = {-17, -15, -10, -6, 6, 10, 15, 17};
 
 int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS] = {0};
 
-BitBoard pieceBitBoards[NUM_UNIQUE_PIECES] = {
+BitBoard piecePositionBitBoards[NUM_UNIQUE_PIECES] = {
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
     0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
 };
+
+BitBoard pieceAttackBitBoards[NUM_UNIQUE_PIECES] = {
+    0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+    0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+};
+
+BitBoard colorAttackBitBoard(int activeColor) {
+  if (activeColor == 1) {
+    return pieceAttackBitBoards[WHITE_ROOK_KEY] | pieceAttackBitBoards[WHITE_KNIGHT_KEY] | pieceAttackBitBoards[WHITE_BISHOP_KEY] |
+           pieceAttackBitBoards[WHITE_KING_KEY] | pieceAttackBitBoards[WHITE_QUEEN_KEY] | pieceAttackBitBoards[WHITE_PAWN_KEY];
+  }
+  return pieceAttackBitBoards[BLACK_ROOK_KEY] | pieceAttackBitBoards[BLACK_KNIGHT_KEY] | pieceAttackBitBoards[BLACK_BISHOP_KEY] |
+         pieceAttackBitBoards[BLACK_KING_KEY] | pieceAttackBitBoards[BLACK_QUEEN_KEY] | pieceAttackBitBoards[BLACK_PAWN_KEY];
+}
 
 static char _piece2char(const Piece piece) __attribute__((unused));
 static char _piece2char(const Piece piece) {

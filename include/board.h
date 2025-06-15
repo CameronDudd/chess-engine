@@ -72,9 +72,11 @@ typedef struct {
   size_t count;
 } MoveList;
 
-extern BitBoard pieceBitBoards[NUM_UNIQUE_PIECES];
+extern BitBoard piecePositionBitBoards[NUM_UNIQUE_PIECES];
+extern BitBoard pieceAttackBitBoards[NUM_UNIQUE_PIECES];
 extern int distanceToEdgeLookup[NUM_POSITIONS][NUM_DIRECTIONS];
 
+BitBoard colorAttackBitBoard(int activeColor);
 Position coordinate2pos(const char coordinate[]);
 void clearBoard(Board board);
 void initBitBoards(Board board);
