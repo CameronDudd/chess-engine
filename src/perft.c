@@ -21,13 +21,16 @@ struct PerftRes perft(Board board, int activeColor, int depth, Move previousMove
     const Move move     = moveList.moves[i];
     const uint8_t flag  = MOVE_FLAG(move);
     const uint8_t check = MOVE_CHECK(move);
-    if (flag & CASTLE) {
+    if (flag == CASTLE) {
       result.castles += 1;
-    } else if (flag == CAPTURE) {
+    }
+    if (flag == CAPTURE) {
       result.captures += 1;
-    } else if (check == CHECK) {
+    }
+    if (check == CHECK) {
       result.checks += 1;
-    } else if (check == CHECKMATE) {
+    }
+    if (check == CHECKMATE) {
       result.checkMates += 1;
     }
     doMove(board, move);
