@@ -75,7 +75,7 @@ static char _piece2char(const Piece piece) {
     case PIECE_WHITE | PIECE_PAWN:
       return 'P';
     default:
-      log_error("Invalid piece '%i' '%s'", piece, uint8t2str(piece));
+      log_error("_piece2char: Invalid piece '%i' '%s'", piece, uint8t2str(piece));
       exit(1);
   }
 }
@@ -214,7 +214,7 @@ static PieceLookupKey _piece2lookup(Piece piece) {
     case PIECE_WHITE | PIECE_PAWN:
       return WHITE_PAWN_KEY;
     default:
-      log_error("Invalid piece '%i' '%s'", piece, uint8t2str(piece));
+      log_error("_piece2lookup: Invalid piece '%i' '%s'", piece, uint8t2str(piece));
       exit(1);
   }
 }
@@ -303,47 +303,19 @@ void initDistanceToEdgeLookup() {
 }
 
 void doMove(Board board, const Move move) {
-  log_debug("making move %i->%i", MOVE_SRC(move), MOVE_DST(move));
-  // FIXME (cameron): update to Move means a lot of this will be easier
   uint8_t src       = MOVE_SRC(move);
   uint8_t dst       = MOVE_DST(move);
   Piece pieceToMove = board[src];
-  Piece pieceToTake = board[dst];
+  // Piece pieceToTake = board[dst];
 
-  // Detect en passant for bitboard update
-  // NOTE (cameron): Only check if pawn is moving diagonally to an empty square,
-  // trust the move generation to ensure that it's a legal en passant
-  Direction direction = dst - src;
-  if ((pieceToMove == (PIECE_BLACK | PIECE_PAWN)) && (pieceToTake == PIECE_NULL)) {
-    if (direction == BACKWARD_LEFT) {
-      piecePositionBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
-      board[src - 1] = PIECE_NULL;
+  // TODO (cameron): Update moving piece bit board
+  // piecePositionBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << src);
+  // piecePositionBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << dst);
 
-    } else if (direction == BACKWARD_RIGHT) {
-      piecePositionBitBoards[_piece2lookup(PIECE_WHITE | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
-      board[src + 1] = PIECE_NULL;
-    }
-  } else if ((pieceToMove == (PIECE_WHITE | PIECE_PAWN)) && (pieceToTake == PIECE_NULL)) {
-    if (direction == FORWARD_LEFT) {
-      piecePositionBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src - 1));
-      board[src - 1] = PIECE_NULL;
-
-    } else if (direction == FORWARD_RIGHT) {
-      piecePositionBitBoards[_piece2lookup(PIECE_BLACK | PIECE_PAWN)] &= ~((uint64_t)1 << (src + 1));
-      board[src + 1] = PIECE_NULL;
-    }
-  }
-
-  // TODO (cameron): Detect castling
-
-  // Update moving piece bit board
-  piecePositionBitBoards[_piece2lookup(pieceToMove)] &= ~((uint64_t)1 << src);
-  piecePositionBitBoards[_piece2lookup(pieceToMove)] |= ((uint64_t)1 << dst);
-
-  // Update taken piece bit board
-  if (pieceToTake != PIECE_NULL) {
-    piecePositionBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << dst);
-  }
+  // TODO (cameron): Update taken piece bit board
+  // if (pieceToTake != PIECE_NULL) {
+  //   piecePositionBitBoards[_piece2lookup(pieceToTake)] &= ~((uint64_t)1 << dst);
+  // }
 
   board[dst] = pieceToMove;
   board[src] = PIECE_NULL;
