@@ -1,11 +1,10 @@
-# Chess Engine
+# Chess Engine Project
 
-## Stats
-
+## Statistics
 Language|files|blank|comment|code
 :-------|-------:|-------:|-------:|-------:
-C|12|115|67|785
-C/C++ Header|8|47|76|140
+C/C++ Header|1|11|14|22
+C|1|4|4|8
 --------|--------|--------|--------|--------
-SUM:|20|162|143|925
+SUM:|2|15|18|30
 [cloc](https://github.com/AlDanial/cloc)

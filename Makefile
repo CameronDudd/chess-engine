@@ -1,72 +1,68 @@
-# == Toolchain ==
 CC = gcc
 
-# == Flags ==
-CFLAGS  = -Wall -Wextra -g -std=c99 -DLOG_USE_COLOR -DUNITY_OUTPUT_COLOR -DUNITY_INCLUDE_DOUBLE -DUNITY_DOUBLE_PRECISION=1e-12f
-LDFLAGS =
+MAJOR	:= 0
+MINOR	:= 0
+PATCH	:= 1
+VERSION	:= v$(MAJOR).$(MINOR).$(PATCH)
 
-# == Directories ==
-SRCDIR          = src
-INCDIR          = include
-BUILDDIR        = build
-LIBDIR          = lib
-TESTDIR         = tests
-UNITYDIR        = $(LIBDIR)/Unity
-LOGLIBDIR       = $(LIBDIR)/log.c/src
-UNITYMEMORYDIR  = $(UNITYDIR)/extras/memory
-UNITYFIXTUREDIR = $(UNITYDIR)/extras/fixture
+BUILD 		?= debug
+TARGET_BASE 	:= main
+TARGET		:= $(TARGET_BASE)_$(VERSION)_$(BUILD)
 
-# == Target Definitions ==
-TARGET     = $(BUILDDIR)/main
-TARGETTEST = $(BUILDDIR)/test
+SRC_DIR		:= src
+BUILD_DIR	:= build
+INCLUDE_DIR	:= include
 
-# == Sources ==
-SRC = $(wildcard $(SRCDIR)/*.c) $(wildcard $(LOGLIBDIR)/*.c)
-SRCTEST = $(filter-out $(SRCDIR)/main.c, $(SRC))
-SRCTESTS = $(wildcard $(TESTDIR)/*.c) \
-		   $(wildcard $(UNITYDIR)/src/*.c) \
-		   $(wildcard $(UNITYFIXTUREDIR)/src/*.c) \
-		   $(wildcard $(UNITYMEMORYDIR)/src/*.c)
+SRC		:= $(wildcard $(SRC_DIR)/*.c)
 
-# == Object files ==
-OBJ = $(patsubst %.c, $(BUILDDIR)/%.o, $(SRC))
+OBJ		:= $(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-# == Includes ==
-INCLUDES     = -I$(INCDIR) -I/usr/include -I$(LOGLIBDIR)
-TESTINCLUDES = $(INCLUDES) -I$(UNITYDIR)/src -I$(UNITYFIXTUREDIR)/src -I$(UNITYMEMORYDIR)/src
+LOG_LIB_DIR	:= lib/log.c/src
+LOG_LIB_SRC	:= $(wildcard $(LOG_LIB_DIR)/*.c)
+LOG_LIB_OBJ	:= $(LOG_LIB_SRC:$(LOG_LIB_DIR)/%.c=$(BUILD_DIR)/log/%.o)
 
-# == Targets ==
-all: main test
+C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
+		   -I$(INCLUDE_DIR) \
+		   -I$(LOG_LIB_DIR) \
+		   -DLOG_USE_COLOR
+LDFLAGS		:=
 
-run: main
-	./$(BUILDDIR)/main
+ifeq ($(BUILD),release)
+	CFLAGS := $(C_FLAGS_COMMON) -O2 -DNDEBUG
+else
+	CFLAGS := $(C_FLAGS_COMMON) -O0 -g3 -DDEBUG
+endif
 
-main: $(BUILDDIR) $(TARGET)
+all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+run: $(TARGET)
+	./$(TARGET)
 
-$(BUILDDIR)/%.o: %.c
+$(TARGET): $(OBJ) $(LOG_LIB_OBJ)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/log/%.o: $(LOG_LIB_DIR)/%.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# == Directory Setup ==
-$(BUILDDIR):
-	mkdir -p $(BUILDDIR)
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-# == Unit Testing ==
-test: $(BUILDDIR)
-	$(CC) $(CFLAGS) $(TESTINCLUDES) $(SRCTEST) $(SRCTESTS) -o $(TARGETTEST)
-
-run-tests: test
-	./$(TARGETTEST)
-
-# == Clean ==
 clean:
-	rm -rf $(BUILDDIR) $(TARGET)
+	rm -rf $(BUILD_DIR) $(TARGET)
 
-# == Stats ==
 cloc:
-	cloc --md $(SRCDIR) $(INCDIR) $(TESTDIR)
+	cloc --md $(SRC_DIR) $(INCLUDE_DIR)
 
-.PHONY: all clean test tests cloc
+format:
+	clang-format -i $(SRC)
+
+info:
+	@echo "Target: $(TARGET)"
+	@echo "Compiler: $(CC)"
+	@echo "Build type: $(BUILD)"
+
+.PHONY: all run clean cloc format info
