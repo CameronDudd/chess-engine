@@ -60,6 +60,10 @@ cloc:
 format:
 	clang-format -i $(SRC)
 
+check:
+	clang-format --dry-run --Werror $(SRC)
+	clang-tidy -p build $(SRC) --warnings-as-errors=*
+
 info:
 	@echo "Target: $(TARGET)"
 	@echo "Compiler: $(CC)"
