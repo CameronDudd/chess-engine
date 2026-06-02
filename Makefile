@@ -33,7 +33,7 @@ else
 	CFLAGS := $(C_FLAGS_COMMON) -O0 -g3 -DDEBUG
 endif
 
-all: $(TARGET)
+all: $(TARGET) compile_commands.json
 
 run: $(TARGET)
 	./$(TARGET)
@@ -69,4 +69,7 @@ info:
 	@echo "Compiler: $(CC)"
 	@echo "Build type: $(BUILD)"
 
-.PHONY: all run clean cloc format info
+compile_commands.json: $(SRC) Makefile
+	@bear -- make $(TARGET)
+
+.PHONY: all run clean cloc format info compile_commands.json
