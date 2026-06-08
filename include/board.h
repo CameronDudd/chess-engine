@@ -8,6 +8,34 @@
 
 #include <stdint.h>
 
+// https://www.chessprogramming.org/Pieces
+// +-----+-----------+----------+
+// | Bit |  Binary   | Semantic |
+// +-----+-----------+----------+
+// |  0  | 0000 0001 |  White   |
+// |  1  | 0000 0010 |  Black   |
+// +-----+-----------+----------+
+// |  2  | 0000 0100 |  Pawn    |
+// |  3  | 0000 1000 |  Knight  |
+// |  4  | 0001 0000 |  Bishop  |
+// |  5  | 0010 0000 |  Rook    |
+// |  6  | 0100 0000 |  Queen   |
+// |  7  | 1000 0000 |  King    |
+// +-----+-----------+----------+
+typedef uint8_t Piece;
+#define PIECE_NULL (Piece)0x00
+#define PIECE_WHITE (Piece)0x01
+#define PIECE_BLACK (Piece)0x02
+#define PIECE_PAWN (Piece)0x04
+#define PIECE_KNIGHT (Piece)0x08
+#define PIECE_BISHOP (Piece)0x10
+#define PIECE_ROOK (Piece)0x20
+#define PIECE_QUEEN (Piece)0x40
+#define PIECE_KING (Piece)0x80
+
+#define PIECE_TYPE_MASK (Piece)0xFC
+#define PIECE_COLOR_MASK (Piece)0x03
+
 #define N 8
 #define NUM_POSITIONS 64  // N rows x N cols
 
@@ -42,6 +70,8 @@ typedef uint16_t Move;
 
 typedef uint8_t PositionIndex;  // 0 bottom-left to 63 top-right
 typedef uint8_t Piece;
-typedef Piece Board[NUM_POSITIONS];
+typedef Piece Board[N][N];
+
+void displayBoard(const Board board);
 
 #endif  // BOARD_H
