@@ -5,6 +5,8 @@
 
 #include "fen.h"
 
+#include <stdint.h>
+
 #include "board.h"
 
 static Piece fenPiece(const char fen) {
@@ -39,17 +41,28 @@ static Piece fenPiece(const char fen) {
 }
 
 void fenPopulateBoard(const char* fen, Board* board) {
+  uint8_t rank = 7;
+  uint8_t file = 0;
   char c;
-  PositionIndex position = NUM_POSITIONS - 1;
+
+  // Init board
+  board->castlingAvailability = 0;
 
   // Piece Placement
   while ((c = *fen++) != ' ') {
-    if (c == '/') continue;
+    if (c == '/') {
+      --rank;
+      file = 0;
+      continue;
+    };
+
     if ('0' <= c && c <= '8') {
-      position -= (c - '0' - 1);
+      file += (c - '0');
+      continue;
     }
-    boardSetPiece(board, position, fenPiece(c));
-    --position;
+
+    boardSetPiece(board, rank * 8 + file, fenPiece(c));
+    ++file;
   }
 
   // Side to move
@@ -73,11 +86,6 @@ void fenPopulateBoard(const char* fen, Board* board) {
         boardSetCastlingAvailability(board, CASTLE_BLACK_QUEEN);
         break;
     }
-    if ('0' <= c && c <= '8') {
-      position -= (c - '0' - 1);
-    }
-    boardSetPiece(board, position, fenPiece(c));
-    --position;
   }
 
   // TODO: En Passant
