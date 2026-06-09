@@ -6,38 +6,27 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
-// https://www.chessprogramming.org/Pieces
-// +-----+-----------+----------+
-// | Bit |  Binary   | Semantic |
-// +-----+-----------+----------+
-// |  0  | 0000 0001 |  White   |
-// |  1  | 0000 0010 |  Black   |
-// +-----+-----------+----------+
-// |  2  | 0000 0100 |  Pawn    |
-// |  3  | 0000 1000 |  Knight  |
-// |  4  | 0001 0000 |  Bishop  |
-// |  5  | 0010 0000 |  Rook    |
-// |  6  | 0100 0000 |  Queen   |
-// |  7  | 1000 0000 |  King    |
-// +-----+-----------+----------+
-typedef uint8_t Piece;
-#define PIECE_NULL (Piece)0x00
-#define PIECE_WHITE (Piece)0x01
-#define PIECE_BLACK (Piece)0x02
-#define PIECE_PAWN (Piece)0x04
-#define PIECE_KNIGHT (Piece)0x08
-#define PIECE_BISHOP (Piece)0x10
-#define PIECE_ROOK (Piece)0x20
-#define PIECE_QUEEN (Piece)0x40
-#define PIECE_KING (Piece)0x80
+typedef enum {
+  PIECE_NULL = 0,
+  WK,
+  WQ,
+  WR,
+  WB,
+  WN,
+  WP,
+  BK,
+  BQ,
+  BR,
+  BB,
+  BN,
+  BP,
+  PIECE_END,
+} Piece;
 
-#define PIECE_TYPE_MASK (Piece)0xFC
-#define PIECE_COLOR_MASK (Piece)0x03
-
-#define N 8
-#define NUM_POSITIONS 64  // N rows x N cols
+#define NUM_POSITIONS 64  // 8 rows x 8 cols
 
 // https://www.chessprogramming.org/Encoding_Moves#MoveIndex
 // R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
@@ -69,9 +58,31 @@ typedef uint16_t Move;
 #define MOVE(flags, dst, src) (Move)((((flags) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
 typedef uint8_t PositionIndex;  // 0 bottom-left to 63 top-right
-typedef uint8_t Piece;
-typedef Piece Board[N][N];
+typedef uint64_t BitBoard;
 
-void displayBoard(const Board board);
+typedef enum {
+  WHITE = 0,
+  BLACK = 1,
+} Color;
+
+typedef enum {
+  CASTLE_WHITE_KING  = 0x01,
+  CASTLE_WHITE_QUEEN = 0x02,
+  CASTLE_BLACK_KING  = 0x04,
+  CASTLE_BLACK_QUEEN = 0x08,
+} CastlingAvailability;
+
+typedef struct {
+  Piece squares[NUM_POSITIONS];
+  Color turn;
+  CastlingAvailability castlingAvailability;
+} Board;
+
+void displayBoard(const Board* board);
+
+void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);
+Piece boardGetPiece(const Board* board, const PositionIndex position);
+void boardSetTurnColor(Board* board, Color turnColor);
+void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAvailability);
 
 #endif  // BOARD_H

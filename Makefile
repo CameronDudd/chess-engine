@@ -38,6 +38,9 @@ all: $(TARGET) compile_commands.json
 run: $(TARGET)
 	./$(TARGET)
 
+init:
+	git submodule update --init --recursive
+
 $(TARGET): $(OBJ) $(LOG_LIB_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
@@ -72,4 +75,4 @@ info:
 compile_commands.json: $(SRC) Makefile
 	@bear -- make $(TARGET)
 
-.PHONY: all run clean cloc format info compile_commands.json
+.PHONY: all init run clean cloc format info compile_commands.json
