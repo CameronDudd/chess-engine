@@ -3,8 +3,8 @@
 ## Statistics
 Language|files|blank|comment|code
 :-------|-------:|-------:|-------:|-------:
-C/C++ Header|1|11|14|22
-C|1|4|4|8
+C|3|31|19|141
+C/C++ Header|2|23|52|63
 --------|--------|--------|--------|--------
-SUM:|2|15|18|30
+SUM:|5|54|71|204
 [cloc](https://github.com/AlDanial/cloc)
