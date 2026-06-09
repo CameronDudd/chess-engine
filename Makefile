@@ -10,7 +10,7 @@ TARGET_BASE 	:= main
 TARGET		:= $(TARGET_BASE)_$(VERSION)_$(BUILD)
 
 SRC_DIR		:= src
-BUILD_DIR	:= build
+BUILD_DIR	:= build/$(BUILD)
 INCLUDE_DIR	:= include
 
 SRC		:= $(wildcard $(SRC_DIR)/*.c)
@@ -22,6 +22,7 @@ LOG_LIB_SRC	:= $(wildcard $(LOG_LIB_DIR)/*.c)
 LOG_LIB_OBJ	:= $(LOG_LIB_SRC:$(LOG_LIB_DIR)/%.c=$(BUILD_DIR)/log/%.o)
 
 C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
+		   -MMD -MP \
 		   -I$(INCLUDE_DIR) \
 		   -I$(LOG_LIB_DIR) \
 		   -DLOG_USE_COLOR
@@ -32,6 +33,10 @@ ifeq ($(BUILD),release)
 else
 	CFLAGS := $(C_FLAGS_COMMON) -O0 -g3 -DDEBUG
 endif
+
+DEP := $(OBJ:.o=.d) $(LOG_LIB_OBJ:.o=.d)
+
+-include $(DEP)
 
 all: $(TARGET) compile_commands.json
 
@@ -75,4 +80,4 @@ info:
 compile_commands.json: $(SRC) Makefile
 	@bear -- make $(TARGET)
 
-.PHONY: all init run clean cloc format info compile_commands.json
+.PHONY: all init run clean cloc format check info compile_commands.json
