@@ -76,6 +76,10 @@ typedef struct {
   Piece squares[NUM_POSITIONS];
   Color turn;
   CastlingAvailability castlingAvailability;
+
+  // Bitboards
+  uint64_t whites;
+  uint64_t blacks;
 } Board;
 
 void displayBoard(const Board* board);

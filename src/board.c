@@ -8,6 +8,8 @@
 #include <log.h>
 #include <stdio.h>
 
+#include "defs.h"
+
 static const char pieceCharacterLookup[PIECE_END] = {' ', 'K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'};
 
 static char pieceChar(const Piece piece) {
@@ -26,6 +28,11 @@ void displayBoard(const Board* board) {
 }
 
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece) {
+  if (board->turn == WHITE) {
+    board->whites |= BIT_SQUARE(position);
+  } else {
+    board->blacks |= BIT_SQUARE(position);
+  }
   board->squares[position] = piece;
 }
 
