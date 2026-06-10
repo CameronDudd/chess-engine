@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "defs.h"
+
 const uint64_t RooksMagics[64] = {
     0x48000908A204000,  0x40400010002000,   0xB00100900402000,  0x8880045800100080, 0xA0002005160080C,  0x3280020080090400, 0x300010000C43200,
     0x200128102002044,  0x8028800040018222, 0x112C01002200041,  0x4105004100102006, 0x3801001004201900, 0x111000800243100,  0x1001001400584700,
@@ -36,7 +38,7 @@ const uint64_t BishopsMagics[64] = {
 
 // https://en.wikipedia.org/wiki/Xorshift
 uint64_t xorshift64() {
-  static uint64_t seed = 8392615925280821472ULL;
+  static uint64_t seed = (uint64_t)8392615925280821472;
   seed ^= seed << 13;
   seed ^= seed >> 7;
   seed ^= seed << 17;
@@ -48,12 +50,12 @@ uint64_t sparsexorshift64(void) {
 }
 
 uint64_t occupancyMask(int index, uint64_t mask) {
-  uint64_t occupancy = 0ULL;
+  uint64_t occupancy = (uint64_t)0;
   int bits           = 0;
   for (int pos = 0; pos < 64; ++pos) {
-    if (mask & (1ULL << pos)) {
+    if (mask & BIT_SQUARE(pos)) {
       if (index & (1 << bits)) {
-        occupancy |= (1ULL << pos);
+        occupancy |= BIT_SQUARE(pos);
       }
       ++bits;
     }
@@ -62,39 +64,39 @@ uint64_t occupancyMask(int index, uint64_t mask) {
 }
 
 uint64_t rookMask(int rank, int file) {
-  uint64_t mask = 0ULL;
-  for (int r = rank - 1; r > 0; --r) mask |= (1ULL << ((r * 8) + file));
-  for (int c = file + 1; c < 7; ++c) mask |= (1ULL << ((rank * 8) + c));
-  for (int r = rank + 1; r < 7; ++r) mask |= (1ULL << ((r * 8) + file));
-  for (int c = file - 1; c > 0; --c) mask |= (1ULL << ((rank * 8) + c));
+  uint64_t mask = (uint64_t)0;
+  for (int r = rank - 1; r > 0; --r) mask |= BIT_SQUARE((r * 8) + file);
+  for (int c = file + 1; c < 7; ++c) mask |= BIT_SQUARE((rank * 8) + c);
+  for (int r = rank + 1; r < 7; ++r) mask |= BIT_SQUARE((r * 8) + file);
+  for (int c = file - 1; c > 0; --c) mask |= BIT_SQUARE((rank * 8) + c);
   return mask;
 }
 
 uint64_t rookLegalMoves(int rank, int file, uint64_t occupancyMask) {
-  uint64_t mask = 0ULL;
+  uint64_t mask = (uint64_t)0;
 
   for (int r = rank - 1; r >= 0; --r) {
     int pos = (r * 8) + file;
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int c = file + 1; c < 8; ++c) {
     int pos = (rank * 8) + c;
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int r = rank + 1; r < 8; ++r) {
     int pos = (r * 8) + file;
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1; c >= 0; --c) {
     int pos = ((rank * 8) + c);
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   return mask;
@@ -121,11 +123,11 @@ void rookMagicNumbers(void) {
 
       while (1) {
         uint64_t candidate = sparsexorshift64();
-        for (int t = 0; t < numVariations; ++t) tmp[t] = 0ULL;
+        for (int t = 0; t < numVariations; ++t) tmp[t] = (uint64_t)0;
         fail = false;
         for (int v = 0; v < numVariations; ++v) {
           int magicIdx = (occupancies[v] * candidate) >> (64 - bitsCount);
-          if (tmp[magicIdx] == 0ULL) {
+          if (tmp[magicIdx] == (uint64_t)0) {
             tmp[magicIdx] = legalMoves[v];
           } else if (tmp[magicIdx] != legalMoves[v]) {
             fail = true;
@@ -143,39 +145,39 @@ void rookMagicNumbers(void) {
 }
 
 uint64_t bishopMask(int rank, int file) {
-  uint64_t mask = 0ULL;
-  for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) mask |= (1ULL << ((r * 8) + c));
-  for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) mask |= (1ULL << ((r * 8) + c));
-  for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) mask |= (1ULL << ((r * 8) + c));
-  for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) mask |= (1ULL << ((r * 8) + c));
+  uint64_t mask = (uint64_t)0;
+  for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) mask |= BIT_SQUARE((r * 8) + c);
+  for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) mask |= BIT_SQUARE((r * 8) + c);
+  for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) mask |= BIT_SQUARE((r * 8) + c);
+  for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) mask |= BIT_SQUARE((r * 8) + c);
   return mask;
 }
 
 uint64_t bishopLegalMoves(int rank, int file, uint64_t occupancyMask) {
-  uint64_t mask = 0ULL;
+  uint64_t mask = (uint64_t)0;
 
   for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) {
     int pos = ((r * 8) + c);
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) {
     int pos = ((r * 8) + c);
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) {
     int pos = ((r * 8) + c);
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) {
     int pos = ((r * 8) + c);
-    mask |= (1ULL << pos);
-    if ((1ULL << pos) & occupancyMask) break;
+    mask |= BIT_SQUARE(pos);
+    if (BIT_SQUARE(pos) & occupancyMask) break;
   }
 
   return mask;
@@ -202,11 +204,11 @@ void bishopMagicNumbers(void) {
 
       while (1) {
         uint64_t candidate = sparsexorshift64();
-        for (int t = 0; t < numVariations; ++t) tmp[t] = 0ULL;
+        for (int t = 0; t < numVariations; ++t) tmp[t] = (uint64_t)0;
         fail = false;
         for (int v = 0; v < numVariations; ++v) {
           int magicIdx = (occupancies[v] * candidate) >> (64 - bitsCount);
-          if (tmp[magicIdx] == 0ULL) {
+          if (tmp[magicIdx] == (uint64_t)0) {
             tmp[magicIdx] = legalMoves[v];
           } else if (tmp[magicIdx] != legalMoves[v]) {
             fail = true;
