@@ -7,6 +7,7 @@
 
 #include "board.h"
 #include "fen.h"
+#include "magics.h"
 
 void logInit(void) {
 #ifdef DEBUG
@@ -16,15 +17,20 @@ void logInit(void) {
 #endif
 }
 
+static void init(void) {
+  logInit();
+  initMagicAttacks();
+}
+
 int main(int argc, char* argv[]) {
   (void)argc;
   (void)argv;
 
-  logInit();
+  init();
 
-  Board board = {0};
+  Board board;
+  initBoard(&board);
 
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
-
-  displayBoard(&board);
+  generateLegalMoves(&board);
 }
