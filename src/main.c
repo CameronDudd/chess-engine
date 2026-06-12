@@ -4,10 +4,12 @@
  */
 
 #include <log.h>
+#include <stdint.h>
 
 #include "board.h"
 #include "fen.h"
 #include "magics.h"
+#include "perft.h"
 
 void logInit(void) {
 #ifdef DEBUG
@@ -32,5 +34,7 @@ int main(int argc, char* argv[]) {
   initBoard(&board);
 
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
-  generateLegalMoves(&board);
+
+  uint64_t nodes = perft(&board, 4);  // Currently only correct up to perft 4
+  printf("Found nodes: %lu\r\n", nodes);
 }

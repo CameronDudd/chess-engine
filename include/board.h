@@ -28,7 +28,15 @@ typedef enum {
   PIECE_END,
 } Piece;
 
-#define NUM_PIECE_TYPES 6
+typedef enum {
+  KING = 0,
+  QUEEN,
+  ROOK,
+  BISHOP,
+  KNIGHT,
+  PAWN,
+  NUM_PIECE_TYPES,
+} PieceBoardIndex;
 
 // https://www.chessprogramming.org/Encoding_Moves#MoveIndex
 // R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
@@ -46,10 +54,12 @@ typedef enum {
 // Bits:  [15 14 13 12][11 10 9 8 7 6][5 4 3 2 1 0]
 typedef uint16_t Move;
 
-#define CASTLE (uint8_t)0x01
-#define CAPTURE (uint8_t)0x02
-#define CHECK (uint8_t)0x04
-#define CHECKMATE (uint8_t)0x8
+#define KING_CASTLE (uint8_t)0x1
+#define QUEEN_CASTLE (uint8_t)0x2
+#define QUEEN_PROMOTION (uint8_t)0x3
+#define ROOK_PROMOTION (uint8_t)0x4
+#define BISHOP_PROMOTION (uint8_t)0x5
+#define KNIGHT_PROMOTION (uint8_t)0x6
 
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
@@ -67,13 +77,15 @@ typedef enum {
 } CastlingAvailability;
 
 typedef struct {
+  Move move;
+  Piece captured;
+} UndoMove;
+
+typedef struct {
   Piece squares[NUM_POSITIONS];
-  Move legalMoves[MAX_CHESS_MOVES];
 
   Color turn;
   CastlingAvailability castlingAvailability;
-
-  Move lastMove;
 
   // Bitboards
   BitBoard whites;
@@ -81,8 +93,8 @@ typedef struct {
 
   BitBoard enemyAttacks;
 
-  BitBoard whitePieces[NUM_PIECE_TYPES];
-  BitBoard blackPieces[NUM_PIECE_TYPES];
+  BitBoard whitePieceBoards[NUM_PIECE_TYPES];
+  BitBoard blackPieceBoards[NUM_PIECE_TYPES];
 
 } Board;
 
@@ -92,8 +104,11 @@ void displayBitBoard(const uint64_t bitboard);
 void initBoard(Board* board);
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);
 Piece boardGetPiece(const Board* board, const PositionIndex position);
+void boardMakeMove(Board* board, Move move, UndoMove* undo);
+void boardUnmakeMove(Board* board, const UndoMove* undo);
 void boardSetTurnColor(Board* board, Color turnColor);
 void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAvailability);
-void generateLegalMoves(Board* board);
+bool kingInCheck(Board* board, Color side);
+unsigned int generateLegalMoves(Board* board, Move* moves);
 
 #endif  // BOARD_H
