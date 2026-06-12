@@ -39,6 +39,9 @@ const BitBoard BishopMagics[NUM_POSITIONS] = {
 BitBoard rookMasks[NUM_POSITIONS];
 BitBoard bishopMasks[NUM_POSITIONS];
 
+int rookNumBits[NUM_POSITIONS];
+int bishopNumBits[NUM_POSITIONS];
+
 BitBoard kingAttacks[NUM_POSITIONS];
 BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
 BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
@@ -257,10 +260,11 @@ void initMagicAttacks(void) {
     kingAttacks[pos] = k;
 
     // ROOKS
-    attackMask     = rookMask(rank, file);
-    rookMasks[pos] = attackMask;
-    bits           = __builtin_popcountll(attackMask);
-    variations     = 1 << bits;
+    attackMask       = rookMask(rank, file);
+    rookMasks[pos]   = attackMask;
+    bits             = __builtin_popcountll(attackMask);
+    rookNumBits[pos] = bits;
+    variations       = 1 << bits;
     for (int v = 0; v < variations; ++v) {
       BitBoard occupancy      = occupancyMask(v, attackMask);
       BitBoard moves          = rookLegalMoves(rank, file, occupancy);
@@ -269,10 +273,11 @@ void initMagicAttacks(void) {
     }
 
     // BISHOPS
-    attackMask       = bishopMask(rank, file);
-    bishopMasks[pos] = attackMask;
-    bits             = __builtin_popcountll(attackMask);
-    variations       = 1 << bits;
+    attackMask         = bishopMask(rank, file);
+    bishopMasks[pos]   = attackMask;
+    bits               = __builtin_popcountll(attackMask);
+    bishopNumBits[pos] = bits;
+    variations         = 1 << bits;
     for (int v = 0; v < variations; ++v) {
       BitBoard occupancy        = occupancyMask(v, attackMask);
       BitBoard moves            = bishopLegalMoves(rank, file, occupancy);
@@ -291,7 +296,7 @@ void initMagicAttacks(void) {
         n |= BIT_SQUARE(POS_INDEX(r, f));
       }
     }
-    kingAttacks[pos] = n;
+    knightAttacks[pos] = n;
 
     // WHITE PAWN
     BitBoard wp = (BitBoard)0;
