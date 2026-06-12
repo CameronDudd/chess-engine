@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "defs.h"
+
 typedef enum {
   PIECE_NULL = 0,
   WK,
@@ -26,7 +28,7 @@ typedef enum {
   PIECE_END,
 } Piece;
 
-#define NUM_POSITIONS 64  // 8 rows x 8 cols
+#define NUM_PIECE_TYPES 6
 
 // https://www.chessprogramming.org/Encoding_Moves#MoveIndex
 // R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
@@ -57,14 +59,6 @@ typedef uint16_t Move;
 #define FLAGS(move) (uint8_t)(((move) >> 12) & _4BIT_MASK)
 #define MOVE(flags, dst, src) (Move)((((flags) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
-typedef uint8_t PositionIndex;  // 0 bottom-left to 63 top-right
-typedef uint64_t BitBoard;
-
-typedef enum {
-  WHITE = 0,
-  BLACK = 1,
-} Color;
-
 typedef enum {
   CASTLE_WHITE_KING  = 0x01,
   CASTLE_WHITE_QUEEN = 0x02,
@@ -74,19 +68,31 @@ typedef enum {
 
 typedef struct {
   Piece squares[NUM_POSITIONS];
+  Move legalMoves[MAX_CHESS_MOVES];
+
   Color turn;
   CastlingAvailability castlingAvailability;
 
+  Move lastMove;
+
   // Bitboards
-  uint64_t whites;
-  uint64_t blacks;
+  BitBoard whites;
+  BitBoard blacks;
+
+  BitBoard enemyAttacks;
+
+  BitBoard whitePieces[NUM_PIECE_TYPES];
+  BitBoard blackPieces[NUM_PIECE_TYPES];
+
 } Board;
 
 void displayBoard(const Board* board);
 
+void initBoard(Board* board);
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);
 Piece boardGetPiece(const Board* board, const PositionIndex position);
 void boardSetTurnColor(Board* board, Color turnColor);
 void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAvailability);
+void generateLegalMoves(Board* board);
 
 #endif  // BOARD_H
