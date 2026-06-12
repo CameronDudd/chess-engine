@@ -288,10 +288,12 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
   while (pawns) {
     PositionIndex src     = getLSB(&pawns);
     BitBoard moveBitboard = pawnAttacks[board->turn][src] & enemyPieces;
+    moveBitboard |= pawnMoves[board->turn][src] & ~friendlyPieces;
     // TODO:
-    //  - [ ] pushes
-    //  - [ ] double pushes
-    //  - [ ] promotions
+    //  - [x] pushes
+    //  - [x] double pushes
+    //  - [~] promotions
+    //  - [ ] en passant
     while (moveBitboard) {
       PositionIndex dst = getLSB(&moveBitboard);
       *(*movePtr)++     = MOVE(0, dst, src);
@@ -312,12 +314,10 @@ void generateLegalMoves(Board* board) {
     Piece lastCapture = PIECE_NULL;
     boardMakeMove(board, *rPtr, &lastCapture);
     if (!kingInCheck(board, board->turn)) {
-      printf("%c%c -> %c%c\r\n", 'a' + INDEX_RANK(SRC(*rPtr)), '1' + INDEX_FILE(SRC(*rPtr)), 'a' + INDEX_RANK(DST(*rPtr)), '1' + INDEX_FILE(DST(*rPtr)));
       *wPtr++ = *rPtr;
     }
     boardUnmakeMove(board, *rPtr, lastCapture);
   }
 
   printf("Num moves: %lu\r\n", wPtr - board->legalMoves);
-  displayBoard(board);
 }

@@ -30,6 +30,7 @@ extern BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
 extern BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
 extern BitBoard knightAttacks[NUM_POSITIONS];
 extern BitBoard pawnAttacks[2][NUM_POSITIONS];
+extern BitBoard pawnMoves[2][NUM_POSITIONS];
 
 BitBoard occupancyMask(int index, BitBoard mask);
 

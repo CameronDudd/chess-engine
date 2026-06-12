@@ -47,6 +47,7 @@ BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
 BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
 BitBoard knightAttacks[NUM_POSITIONS];
 BitBoard pawnAttacks[2][NUM_POSITIONS];
+BitBoard pawnMoves[2][NUM_POSITIONS];
 
 // https://en.wikipedia.org/wiki/Xorshift
 BitBoard xorshift64() {
@@ -300,6 +301,11 @@ void initMagicAttacks(void) {
 
     // WHITE PAWN
     BitBoard wp = (BitBoard)0;
+    if (rank == 1) wp |= BIT_SQUARE(POS_INDEX(rank + 2, file));
+    if (rank < 7) wp |= BIT_SQUARE(POS_INDEX(rank + 1, file));
+    pawnMoves[WHITE][pos] = wp;
+
+    wp = (BitBoard)0;
     if (rank < 7) {
       if (file > 0) wp |= BIT_SQUARE(POS_INDEX(rank + 1, file - 1));
       if (file < 7) wp |= BIT_SQUARE(POS_INDEX(rank + 1, file + 1));
@@ -308,6 +314,11 @@ void initMagicAttacks(void) {
 
     // BLACK PAWN
     BitBoard bp = (BitBoard)0;
+    if (rank == 6) bp |= BIT_SQUARE(POS_INDEX(rank - 2, file));
+    if (rank > 0) bp |= BIT_SQUARE(POS_INDEX(rank - 1, file));
+    pawnMoves[BLACK][pos] = bp;
+
+    bp = (BitBoard)0;
     if (rank > 0) {
       if (file > 0) bp |= BIT_SQUARE(POS_INDEX(rank - 1, file - 1));
       if (file < 7) bp |= BIT_SQUARE(POS_INDEX(rank - 1, file + 1));
