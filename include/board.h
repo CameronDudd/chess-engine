@@ -87,6 +87,7 @@ typedef struct {
 } Board;
 
 void displayBoard(const Board* board);
+void displayBitBoard(const uint64_t bitboard);
 
 void initBoard(Board* board);
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);

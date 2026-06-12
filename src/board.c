@@ -20,6 +20,8 @@ static PositionIndex getLSB(BitBoard* bitboard) {
   return pos;
 }
 
+#define BORDER "+---------------+"
+
 static const char pieceCharacterLookup[PIECE_END] = {' ', 'K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'};
 
 static char pieceChar(const Piece piece) {
