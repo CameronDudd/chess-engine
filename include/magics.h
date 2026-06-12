@@ -22,6 +22,9 @@ extern const BitBoard BishopMagics[NUM_POSITIONS];
 extern BitBoard rookMasks[NUM_POSITIONS];
 extern BitBoard bishopMasks[NUM_POSITIONS];
 
+extern int rookNumBits[NUM_POSITIONS];
+extern int bishopNumBits[NUM_POSITIONS];
+
 extern BitBoard kingAttacks[NUM_POSITIONS];
 extern BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
 extern BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
