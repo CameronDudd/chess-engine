@@ -50,23 +50,20 @@ typedef enum {
 // 1 Null Termination
 #define MOVE_STRING_SIZE 7
 
-// Field: [   FLAG    ][     DST     ][    SRC    ]
-// Bits:  [15 14 13 12][11 10 9 8 7 6][5 4 3 2 1 0]
-typedef uint16_t Move;
+// Field: [  FLAG   ][     DST     ][    SRC    ]
+// Bits:  [31 ... 12][11 10 9 8 7 6][5 4 3 2 1 0]
+typedef uint32_t Move;
+typedef uint16_t MoveFlag;
 
-// Maximum number of unique flags 15 (0b1111)
-typedef enum {
-  QUIET = 0,
-  KING_CASTLE,
-  QUEEN_CASTLE,
-  QUEEN_PROMOTION,
-  ROOK_PROMOTION,
-  BISHOP_PROMOTION,
-  KNIGHT_PROMOTION,
-  CAPTURE,
-  CHECK,
-  CHECKMATE,
-} MoveFlag;
+#define MOVE_QUIET 0x0000
+#define MOVE_CHECK 0x0001
+#define MOVE_CAPTURE 0x0002
+#define MOVE_KING_CASTLE 0x0004
+#define MOVE_QUEEN_CASTLE 0x0008
+#define MOVE_ROOK_PROMOTION 0x0010
+#define MOVE_QUEEN_PROMOTION 0x0020
+#define MOVE_BISHOP_PROMOTION 0x0040
+#define MOVE_KNIGHT_PROMOTION 0x0080
 
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
@@ -112,7 +109,6 @@ void displayBitBoard(const uint64_t bitboard);
 bool moveCheck(const Move move);
 bool moveCastle(const Move move);
 bool moveCapture(const Move move);
-bool moveCheckmate(const Move move);
 bool movePromotion(const Move move);
 
 void initBoard(Board* board);
