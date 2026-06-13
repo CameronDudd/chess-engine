@@ -9,7 +9,7 @@
 
 #include "board.h"
 
-bool bulk = false;
+#define BULK 0
 
 void addPerft(PerftResult* a, const PerftResult b) {
   a->nodes += b.nodes;
@@ -35,10 +35,12 @@ PerftResult perft(Board* board, int depth) {
     return result;
   }
 
-  if (bulk && depth == 1) {
+#if (BULK)
+  if (depth == 1) {
     result.nodes = numMoves;
     return result;
   }
+#endif
 
   if (depth == 1) {
     result.nodes = numMoves;
@@ -54,7 +56,6 @@ PerftResult perft(Board* board, int depth) {
 
       if (kingInCheck(board, board->turn)) {
         result.checks += 1;
-
         Move tmp[MAX_CHESS_MOVES];
         if (generateLegalMoves(board, tmp) == 0) {
           result.checkmates += 1;
