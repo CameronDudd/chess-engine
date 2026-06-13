@@ -67,9 +67,9 @@ BitBoard occupancyMask(int index, BitBoard mask) {
   BitBoard occupancy = (BitBoard)0;
   int bits           = 0;
   for (PositionIndex pos = 0; pos < NUM_POSITIONS; ++pos) {
-    if (mask & BIT_SQUARE(pos)) {
+    if (mask & POSITION_BIT(pos)) {
       if (index & (1 << bits)) {
-        occupancy |= BIT_SQUARE(pos);
+        occupancy |= POSITION_BIT(pos);
       }
       ++bits;
     }
@@ -79,10 +79,10 @@ BitBoard occupancyMask(int index, BitBoard mask) {
 
 BitBoard rookMask(int rank, int file) {
   BitBoard mask = (BitBoard)0;
-  for (int r = rank - 1; r > 0; --r) mask |= BIT_SQUARE((r * 8) + file);
-  for (int c = file + 1; c < 7; ++c) mask |= BIT_SQUARE((rank * 8) + c);
-  for (int r = rank + 1; r < 7; ++r) mask |= BIT_SQUARE((r * 8) + file);
-  for (int c = file - 1; c > 0; --c) mask |= BIT_SQUARE((rank * 8) + c);
+  for (int r = rank - 1; r > 0; --r) mask |= POSITION_BIT((r * 8) + file);
+  for (int c = file + 1; c < 7; ++c) mask |= POSITION_BIT((rank * 8) + c);
+  for (int r = rank + 1; r < 7; ++r) mask |= POSITION_BIT((r * 8) + file);
+  for (int c = file - 1; c > 0; --c) mask |= POSITION_BIT((rank * 8) + c);
   return mask;
 }
 
@@ -91,26 +91,26 @@ BitBoard rookLegalMoves(int rank, int file, BitBoard occupancyMask) {
 
   for (int r = rank - 1; r >= 0; --r) {
     int pos = (r * 8) + file;
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file + 1; c < 8; ++c) {
     int pos = (rank * 8) + c;
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int r = rank + 1; r < 8; ++r) {
     int pos = (r * 8) + file;
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1; c >= 0; --c) {
     int pos = ((rank * 8) + c);
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   return mask;
@@ -160,10 +160,10 @@ void rookMagicNumbers(void) {
 
 BitBoard bishopMask(int rank, int file) {
   BitBoard mask = (BitBoard)0;
-  for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) mask |= BIT_SQUARE((r * 8) + c);
-  for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) mask |= BIT_SQUARE((r * 8) + c);
-  for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) mask |= BIT_SQUARE((r * 8) + c);
-  for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) mask |= BIT_SQUARE((r * 8) + c);
+  for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) mask |= POSITION_BIT((r * 8) + c);
   return mask;
 }
 
@@ -172,26 +172,26 @@ BitBoard bishopLegalMoves(int rank, int file, BitBoard occupancyMask) {
 
   for (int c = file + 1, r = rank + 1; c < 8 && r < 8; ++c, ++r) {
     int pos = ((r * 8) + c);
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file + 1, r = rank - 1; c < 8 && r >= 0; ++c, --r) {
     int pos = ((r * 8) + c);
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1, r = rank - 1; c >= 0 && r >= 0; --c, --r) {
     int pos = ((r * 8) + c);
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1, r = rank + 1; c >= 0 && r < 8; --c, ++r) {
     int pos = ((r * 8) + c);
-    mask |= BIT_SQUARE(pos);
-    if (BIT_SQUARE(pos) & occupancyMask) break;
+    mask |= POSITION_BIT(pos);
+    if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   return mask;
@@ -256,7 +256,7 @@ void initMagicAttacks(void) {
         int r = rank + dr;
         int f = file + df;
         if (r < 0 || r > 7 || f < 0 || f > 7) continue;
-        k |= BIT_SQUARE(POS_INDEX(r, f));
+        k |= POSITION_BIT(POS_INDEX(r, f));
       }
     }
     kingAttacks[pos] = k;
@@ -295,30 +295,30 @@ void initMagicAttacks(void) {
       int r = rank + dr[i];
       int f = file + df[i];
       if ((0 <= r) && (r < 8) && (0 <= f) && (f < 8)) {
-        n |= BIT_SQUARE(POS_INDEX(r, f));
+        n |= POSITION_BIT(POS_INDEX(r, f));
       }
     }
     knightAttacks[pos] = n;
 
     // WHITE PAWN
-    if (rank == 1) pawnDoubleMoves[WHITE][pos] = BIT_SQUARE(POS_INDEX(rank + 2, file));
-    if (rank < 7) pawnSingleMoves[WHITE][pos] = BIT_SQUARE(POS_INDEX(rank + 1, file));
+    if (rank == 1) pawnDoubleMoves[WHITE][pos] = POSITION_BIT(POS_INDEX(rank + 2, file));
+    if (rank < 7) pawnSingleMoves[WHITE][pos] = POSITION_BIT(POS_INDEX(rank + 1, file));
 
     BitBoard wp = (BitBoard)0;
     if (rank < 7) {
-      if (file > 0) wp |= BIT_SQUARE(POS_INDEX(rank + 1, file - 1));
-      if (file < 7) wp |= BIT_SQUARE(POS_INDEX(rank + 1, file + 1));
+      if (file > 0) wp |= POSITION_BIT(POS_INDEX(rank + 1, file - 1));
+      if (file < 7) wp |= POSITION_BIT(POS_INDEX(rank + 1, file + 1));
     }
     pawnAttacks[WHITE][pos] = wp;
 
     // BLACK PAWN
-    if (rank == 6) pawnDoubleMoves[BLACK][pos] = BIT_SQUARE(POS_INDEX(rank - 2, file));
-    if (rank > 0) pawnSingleMoves[BLACK][pos] = BIT_SQUARE(POS_INDEX(rank - 1, file));
+    if (rank == 6) pawnDoubleMoves[BLACK][pos] = POSITION_BIT(POS_INDEX(rank - 2, file));
+    if (rank > 0) pawnSingleMoves[BLACK][pos] = POSITION_BIT(POS_INDEX(rank - 1, file));
 
     BitBoard bp = (BitBoard)0;
     if (rank > 0) {
-      if (file > 0) bp |= BIT_SQUARE(POS_INDEX(rank - 1, file - 1));
-      if (file < 7) bp |= BIT_SQUARE(POS_INDEX(rank - 1, file + 1));
+      if (file > 0) bp |= POSITION_BIT(POS_INDEX(rank - 1, file - 1));
+      if (file < 7) bp |= POSITION_BIT(POS_INDEX(rank - 1, file + 1));
     }
     pawnAttacks[BLACK][pos] = bp;
   }

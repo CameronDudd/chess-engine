@@ -54,31 +54,39 @@ typedef enum {
 // Bits:  [15 14 13 12][11 10 9 8 7 6][5 4 3 2 1 0]
 typedef uint16_t Move;
 
-#define KING_CASTLE (uint8_t)0x1
-#define QUEEN_CASTLE (uint8_t)0x2
-#define QUEEN_PROMOTION (uint8_t)0x3
-#define ROOK_PROMOTION (uint8_t)0x4
-#define BISHOP_PROMOTION (uint8_t)0x5
-#define KNIGHT_PROMOTION (uint8_t)0x6
+// Maximum number of unique flags 15 (0b1111)
+typedef enum {
+  QUIET = 0,
+  KING_CASTLE,
+  QUEEN_CASTLE,
+  QUEEN_PROMOTION,
+  ROOK_PROMOTION,
+  BISHOP_PROMOTION,
+  KNIGHT_PROMOTION,
+  CAPTURE,
+  CHECK,
+  CHECKMATE,
+} MoveFlag;
 
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
 
-#define SRC(move) (uint8_t)((move) & _6BIT_MASK)
-#define DST(move) (uint8_t)(((move) >> 6) & _6BIT_MASK)
-#define FLAGS(move) (uint8_t)(((move) >> 12) & _4BIT_MASK)
-#define MOVE(flags, dst, src) (Move)((((flags) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
+#define SRC(move) (PositionIndex)((move) & _6BIT_MASK)
+#define DST(move) (PositionIndex)(((move) >> 6) & _6BIT_MASK)
+#define FLAG(move) (MoveFlag)(((move) >> 12) & _4BIT_MASK)
+#define MOVE(flag, dst, src) (Move)((((flag) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
 typedef enum {
-  CASTLE_WHITE_KING  = 0x01,
-  CASTLE_WHITE_QUEEN = 0x02,
-  CASTLE_BLACK_KING  = 0x04,
-  CASTLE_BLACK_QUEEN = 0x08,
+  CASTLE_WHITE_KING  = 0x1,
+  CASTLE_WHITE_QUEEN = 0x2,
+  CASTLE_BLACK_KING  = 0x4,
+  CASTLE_BLACK_QUEEN = 0x8,
 } CastlingAvailability;
 
 typedef struct {
   Move move;
   Piece captured;
+  CastlingAvailability castlingAvailability;
 } UndoMove;
 
 typedef struct {
@@ -100,6 +108,12 @@ typedef struct {
 
 void displayBoard(const Board* board);
 void displayBitBoard(const uint64_t bitboard);
+
+bool moveCheck(const Move move);
+bool moveCastle(const Move move);
+bool moveCapture(const Move move);
+bool moveCheckmate(const Move move);
+bool movePromotion(const Move move);
 
 void initBoard(Board* board);
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);

@@ -10,6 +10,16 @@
 
 #include "board.h"
 
-unsigned int perft(Board* board, int depth);
+typedef struct {
+  unsigned int nodes;
+  unsigned int captures;
+  unsigned int ep;
+  unsigned int castles;
+  unsigned int promotions;
+  unsigned int checks;
+  unsigned int checkmates;
+} PerftResult;
+
+PerftResult perft(Board* board, int depth);
 
 #endif  // PERFT_H

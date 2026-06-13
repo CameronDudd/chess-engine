@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "board.h"
+#include "defs.h"
 #include "fen.h"
 #include "magics.h"
 #include "perft.h"
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
 
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
 
-  uint64_t nodes = perft(&board, 4);  // Currently only correct up to perft 4
-  printf("Found nodes: %lu\r\n", nodes);
+  PerftResult result = perft(&board, 3);  // Currently only correct up to perft 4
+  printf("nodes %i | captures %i | e.p. %i | captures %i | promotions %i | checks %i | checkmates %i \r\n", result.nodes, result.captures, result.ep,
+         result.captures, result.promotions, result.checks, result.checkmates);
 }

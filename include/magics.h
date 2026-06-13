@@ -13,9 +13,6 @@
 #define ROOK_VARIATIONS 4096
 #define BISHOP_VARIATIONS 512
 
-#define FILE_A (BitBoard)0x0101010101010101
-#define FILE_H (BitBoard)0x8080808080808080
-
 extern const BitBoard RookMagics[NUM_POSITIONS];
 extern const BitBoard BishopMagics[NUM_POSITIONS];
 
