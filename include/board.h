@@ -74,12 +74,11 @@ typedef uint16_t MoveFlag;
 #define FLAG(move) (MoveFlag)((move) >> 12)
 #define MOVE(flag, dst, src) (Move)(((flag) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
-typedef enum {
-  CASTLE_WHITE_KING  = 0x1,
-  CASTLE_WHITE_QUEEN = 0x2,
-  CASTLE_BLACK_KING  = 0x4,
-  CASTLE_BLACK_QUEEN = 0x8,
-} CastlingAvailability;
+typedef uint8_t CastlingAvailability;
+#define CASTLE_WHITE_KING (CastlingAvailability)0x1
+#define CASTLE_WHITE_QUEEN (CastlingAvailability)0x2
+#define CASTLE_BLACK_KING (CastlingAvailability)0x4
+#define CASTLE_BLACK_QUEEN (CastlingAvailability)0x8
 
 typedef struct {
   Move move;

@@ -11,13 +11,13 @@
 #include "board.h"
 
 typedef struct {
-  unsigned int nodes;
-  unsigned int captures;
-  unsigned int ep;
-  unsigned int castles;
-  unsigned int promotions;
-  unsigned int checks;
-  unsigned int checkmates;
+  unsigned long long nodes;
+  unsigned long long captures;
+  unsigned long long ep;
+  unsigned long long castles;
+  unsigned long long promotions;
+  unsigned long long checks;
+  unsigned long long checkmates;
 } PerftResult;
 
 PerftResult perft(Board* board, int depth);

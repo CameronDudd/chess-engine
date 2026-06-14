@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
 
-  PerftResult result = perft(&board, 6);  // Currently only correct up to perft 6
-  printf("nodes %i | captures %i | e.p. %i | promotions %i | checks %i | checkmates %i \r\n", result.nodes, result.captures, result.ep, result.promotions,
-         result.checks, result.checkmates);
+  PerftResult result = perft(&board, 8);
+  printf("nodes %llu | captures %llu | e.p. %llu | castles %llu | promotions %llu | checks %llu | checkmates %llu \r\n", result.nodes, result.captures,
+         result.ep, result.castles, result.promotions, result.checks, result.checkmates);
 }

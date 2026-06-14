@@ -15,6 +15,8 @@
 #define BORDER "+---------------+"
 #define PIECE_WHITE(piece) ((PIECE_NULL < (piece)) && ((piece) <= WP))
 
+static CastlingAvailability castlingAvailabilityLookup[NUM_POSITIONS];
+
 static PositionIndex getLSB(BitBoard* bitboard) {
   PositionIndex pos = __builtin_ctzll(*bitboard);
   *bitboard &= *bitboard - 1;
@@ -90,6 +92,16 @@ bool moveEP(const Move move) {
   return FLAG(move) & MOVE_EP;
 }
 
+void initCastlingAvailability(void) {
+  for (PositionIndex i = 0; i < NUM_POSITIONS; ++i) castlingAvailabilityLookup[i] = 0xFF;
+  castlingAvailabilityLookup[A1] = ~CASTLE_WHITE_QUEEN;
+  castlingAvailabilityLookup[E1] = ~(CASTLE_WHITE_KING | CASTLE_WHITE_QUEEN);
+  castlingAvailabilityLookup[H1] = ~CASTLE_WHITE_KING;
+  castlingAvailabilityLookup[A8] = ~CASTLE_BLACK_QUEEN;
+  castlingAvailabilityLookup[E8] = ~(CASTLE_BLACK_KING | CASTLE_BLACK_QUEEN);
+  castlingAvailabilityLookup[H8] = ~CASTLE_BLACK_KING;
+}
+
 void initBoard(Board* board) {
   // Zero out the board
   for (int i = 0; i < NUM_POSITIONS; ++i) board->squares[i] = (Piece)0;
@@ -100,6 +112,8 @@ void initBoard(Board* board) {
   board->blacks               = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->whitePieceBoards[i] = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->blackPieceBoards[i] = (BitBoard)0;
+
+  initCastlingAvailability();
 }
 
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece) {
@@ -120,37 +134,12 @@ void boardRemovePiece(Board* board, const PositionIndex position, const Piece pi
 
   BitBoard positionBit = POSITION_BIT(position);
 
-  switch (piece) {
-    case WK:
-      board->castlingAvailability &= ~(CASTLE_WHITE_KING | CASTLE_WHITE_QUEEN);
-      break;
-    case BK:
-      board->castlingAvailability &= ~(CASTLE_BLACK_KING | CASTLE_BLACK_QUEEN);
-      break;
-    case WR:
-      if (positionBit & RANK_1 & FILE_A) {
-        board->castlingAvailability &= ~CASTLE_WHITE_QUEEN;
-      } else if (positionBit & RANK_1 & FILE_H) {
-        board->castlingAvailability &= ~CASTLE_WHITE_KING;
-      }
-      break;
-    case BR:
-      if (positionBit & RANK_8 & FILE_A) {
-        board->castlingAvailability &= ~CASTLE_BLACK_QUEEN;
-      } else if (positionBit & RANK_8 & FILE_H) {
-        board->castlingAvailability &= ~CASTLE_BLACK_KING;
-      }
-      break;
-    default:
-      break;
-  }
-
   if (PIECE_WHITE(piece)) {
     board->whites &= ~positionBit;
-    board->whitePieceBoards[piece - WK] &= ~POSITION_BIT(position);
+    board->whitePieceBoards[piece - WK] &= ~positionBit;
   } else {
     board->blacks &= ~positionBit;
-    board->blackPieceBoards[piece - BK] &= ~POSITION_BIT(position);
+    board->blackPieceBoards[piece - BK] &= ~positionBit;
   }
 
   board->squares[position] = PIECE_NULL;
@@ -180,6 +169,9 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {
 
   boardRemovePiece(board, src, piece);
   boardSetPiece(board, dst, piece);
+
+  board->castlingAvailability &= castlingAvailabilityLookup[src];
+  board->castlingAvailability &= castlingAvailabilityLookup[dst];
 
   if (flag & MOVE_KING_CASTLE) {
     Piece rook = (board->turn == WHITE) ? WR : BR;
@@ -217,13 +209,13 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
   if (undo->captured != PIECE_NULL) boardSetPiece(board, dst, undo->captured);
 
   if (flag & MOVE_KING_CASTLE) {
-    Piece rook = (board->turn == WHITE) ? WR : BR;
-    boardRemovePiece(board, dst + 1, rook);
-    boardSetPiece(board, src + 1, rook);
-  } else if (flag & MOVE_QUEEN_CASTLE) {
-    Piece rook = (board->turn == WHITE) ? WR : BR;
-    boardRemovePiece(board, dst - 2, rook);
+    Piece rook = (board->turn == WHITE) ? BR : WR;
+    boardRemovePiece(board, src + 1, rook);
     boardSetPiece(board, dst + 1, rook);
+  } else if (flag & MOVE_QUEEN_CASTLE) {
+    Piece rook = (board->turn == WHITE) ? BR : WR;
+    boardRemovePiece(board, dst + 1, rook);
+    boardSetPiece(board, dst - 2, rook);
   } else if (flag & MOVE_EP) {
     boardSetPiece(board, undo->epCapturedSquare, board->turn == WHITE ? WP : BP);
   }
@@ -341,26 +333,28 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
   BitBoard enemyKing       = (board->turn == WHITE) ? board->blackPieceBoards[KING] : board->whitePieceBoards[KING];
   BitBoard enemyAttacks    = colorAttack(board, board->turn == WHITE ? BLACK : WHITE);
 
-  CastlingAvailability canCastleKingSide =
+  CastlingAvailability kingCastleAvailable =
       (board->turn == WHITE) ? board->castlingAvailability & CASTLE_WHITE_KING : board->castlingAvailability & CASTLE_BLACK_KING;
-  BitBoard kingSideCastleMask  = (board->turn == WHITE) ? WHITE_KING_CASTLE_MASK : BLACK_KING_CASTLE_MASK;
-  BitBoard queenSideCastleMask = (board->turn == WHITE) ? WHITE_QUEEN_CASTLE_MASK : BLACK_QUEEN_CASTLE_MASK;
-
-  CastlingAvailability canCastleQueenSide =
+  CastlingAvailability queenCastleAvailable =
       (board->turn == WHITE) ? board->castlingAvailability & CASTLE_WHITE_QUEEN : board->castlingAvailability & CASTLE_BLACK_QUEEN;
+
+  BitBoard kingCastleMask      = (board->turn == WHITE) ? WHITE_KING_CASTLE_MASK : BLACK_KING_CASTLE_MASK;
+  BitBoard kingRookCastleMask  = (board->turn == WHITE) ? WHITE_KING_ROOK_CASTLE_MASK : BLACK_KING_ROOK_CASTLE_MASK;
+  BitBoard queenCastleMask     = (board->turn == WHITE) ? WHITE_QUEEN_CASTLE_MASK : BLACK_QUEEN_CASTLE_MASK;
+  BitBoard queenRookCastleMask = (board->turn == WHITE) ? WHITE_QUEEN_ROOK_CASTLE_MASK : BLACK_QUEEN_ROOK_CASTLE_MASK;
+
+  if (kingCastleAvailable && ((kingCastleMask & enemyAttacks) == 0) && ((kingRookCastleMask & occupancy) == 0)) {
+    PositionIndex src = __builtin_ctzll(pieceBitboards[KING]);
+    *(*movePtr)++     = MOVE(MOVE_KING_CASTLE, src + 2, src);
+  }
+  if (queenCastleAvailable && ((queenCastleMask & enemyAttacks) == 0) && ((queenRookCastleMask & occupancy) == 0)) {
+    PositionIndex src = __builtin_ctzll(pieceBitboards[KING]);
+    *(*movePtr)++     = MOVE(MOVE_QUEEN_CASTLE, src - 2, src);
+  }
 
   BitBoard kings = pieceBitboards[KING];
   while (kings) {
-    PositionIndex src = getLSB(&kings);
-
-    if (canCastleKingSide && !kingInCheck(board, board->turn) && !(occupancy & kingSideCastleMask) && !(enemyAttacks & kingSideCastleMask)) {
-      *(*movePtr)++ = MOVE(MOVE_KING_CASTLE, src + 2, src);
-    }
-
-    if (canCastleQueenSide && !kingInCheck(board, board->turn) && !(occupancy & queenSideCastleMask) && !(enemyAttacks & queenSideCastleMask)) {
-      *(*movePtr)++ = MOVE(MOVE_QUEEN_CASTLE, src - 2, src);
-    }
-
+    PositionIndex src     = getLSB(&kings);
     BitBoard moveBitboard = kingAttacks[src] & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }

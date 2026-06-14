@@ -27,10 +27,18 @@
 #define RANK_8 (BitBoard)0xFF00000000000000
 
 #define CORNERS (BitBoard)0x8100000000000081
-#define WHITE_KING_CASTLE_MASK (BitBoard)0x0000000000000060
-#define WHITE_QUEEN_CASTLE_MASK (BitBoard)0x000000000000000E
-#define BLACK_KING_CASTLE_MASK (BitBoard)0x6000000000000000
-#define BLACK_QUEEN_CASTLE_MASK (BitBoard)0x0E00000000000000
+
+#define WHITE_KING_CASTLE_MASK (BitBoard)0x0000000000000070
+#define WHITE_KING_ROOK_CASTLE_MASK (BitBoard)0x0000000000000060
+
+#define WHITE_QUEEN_CASTLE_MASK (BitBoard)0x000000000000001C
+#define WHITE_QUEEN_ROOK_CASTLE_MASK (BitBoard)0x000000000000000E
+
+#define BLACK_KING_CASTLE_MASK (BitBoard)0x7000000000000000
+#define BLACK_KING_ROOK_CASTLE_MASK (BitBoard)0x6000000000000000
+
+#define BLACK_QUEEN_CASTLE_MASK (BitBoard)0x1C00000000000000
+#define BLACK_QUEEN_ROOK_CASTLE_MASK (BitBoard)0x0E00000000000000
 
 #define NUM_POSITIONS 64  // 8 rows x 8 cols
 
@@ -43,6 +51,12 @@ typedef uint8_t PositionIndex;  // 0 bottom-left to 63 top-right
 typedef uint64_t BitBoard;
 
 #define NAP (PositionIndex)0xFF  // Not A Position
+#define A1 (PositionIndex)0
+#define E1 (PositionIndex)4
+#define H1 (PositionIndex)7
+#define A8 (PositionIndex)56
+#define E8 (PositionIndex)60
+#define H8 (PositionIndex)63
 
 typedef enum {
   WHITE = 0,
