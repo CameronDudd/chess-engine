@@ -26,14 +26,8 @@ PerftResult perft(Board* board, int depth) {
 
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
-  bool isCheckmate      = (numMoves == 0 && kingInCheck(board, board->turn));
 
   PerftResult result = {0};
-
-  if (isCheckmate) {
-    result.checkmates = 1;
-    return result;
-  }
 
 #if (BULK)
   if (depth == 1) {
