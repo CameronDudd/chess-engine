@@ -50,6 +50,7 @@ PerftResult perft(Board* board, int depth) {
       if (moveCastle(move)) result.castles += 1;
       if (moveCapture(move)) result.captures += 1;
       if (movePromotion(move)) result.promotions += 1;
+      if (moveEP(move)) result.ep += 1;
 
       UndoMove undo;
       boardMakeMove(board, move, &undo);

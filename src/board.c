@@ -7,6 +7,7 @@
 
 #include <log.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "defs.h"
 #include "magics.h"
@@ -20,20 +21,12 @@ static PositionIndex getLSB(BitBoard* bitboard) {
   return pos;
 }
 
-static BitBoard kingPosition(Board* board, Color color) {
-  if (color == WHITE) {
-    return board->whitePieceBoards[KING];
-  }
-  return board->blackPieceBoards[KING];
-}
-
 static void pushMoves(BitBoard enemyKing, BitBoard enemyPieces, PositionIndex src, BitBoard* moves, Move** movePtr) {
   enemyPieces &= ~enemyKing;
   while (*moves) {
     PositionIndex dst = getLSB(moves);
     MoveFlag flag     = MOVE_QUIET;
     if (POSITION_BIT(dst) & enemyPieces) flag |= MOVE_CAPTURE;
-    if (POSITION_BIT(dst) & enemyKing) flag |= MOVE_CHECK;
     *(*movePtr)++ = MOVE(flag, dst, src);
   }
 }
@@ -81,10 +74,6 @@ void displayBitBoard(const BitBoard board) {
   printf("\r\n");
 }
 
-bool moveCheck(const Move move) {
-  return FLAG(move) & MOVE_CHECK;
-}
-
 bool moveCastle(const Move move) {
   return FLAG(move) & (MOVE_KING_CASTLE | MOVE_QUEEN_CASTLE);
 }
@@ -97,14 +86,18 @@ bool movePromotion(const Move move) {
   return FLAG(move) & (MOVE_QUEEN_PROMOTION | MOVE_ROOK_PROMOTION | MOVE_BISHOP_PROMOTION | MOVE_KNIGHT_PROMOTION);
 }
 
+bool moveEP(const Move move) {
+  return FLAG(move) & MOVE_EP;
+}
+
 void initBoard(Board* board) {
   // Zero out the board
   for (int i = 0; i < NUM_POSITIONS; ++i) board->squares[i] = (Piece)0;
   board->turn                 = WHITE;
   board->castlingAvailability = 0;
+  board->epSquare             = NAP;
   board->whites               = (BitBoard)0;
   board->blacks               = (BitBoard)0;
-  board->enemyAttacks         = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->whitePieceBoards[i] = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->blackPieceBoards[i] = (BitBoard)0;
 }
@@ -159,6 +152,7 @@ void boardRemovePiece(Board* board, const PositionIndex position, const Piece pi
     board->blacks &= ~positionBit;
     board->blackPieceBoards[piece - BK] &= ~POSITION_BIT(position);
   }
+
   board->squares[position] = PIECE_NULL;
 }
 
@@ -177,6 +171,10 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {
   undo->move                 = move;
   undo->captured             = target;
   undo->castlingAvailability = board->castlingAvailability;
+  undo->epSquare             = board->epSquare;
+  undo->epCapturedSquare     = NAP;
+
+  board->epSquare = NAP;
 
   if (target != PIECE_NULL) boardRemovePiece(board, dst, target);
 
@@ -191,6 +189,11 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {
     Piece rook = (board->turn == WHITE) ? WR : BR;
     boardRemovePiece(board, dst - 2, rook);
     boardSetPiece(board, dst + 1, rook);
+  } else if (flag & MOVE_EP) {
+    undo->epCapturedSquare = (board->turn == WHITE) ? dst - 8 : dst + 8;
+    boardRemovePiece(board, undo->epCapturedSquare, (board->turn == WHITE) ? BP : WP);
+  } else if (flag & MOVE_DOUBLE_PUSH) {
+    board->epSquare = (src + dst) / 2;
   }
 
   board->turn = (board->turn == WHITE) ? BLACK : WHITE;
@@ -209,6 +212,8 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
   boardSetPiece(board, src, piece);
 
   board->castlingAvailability = undo->castlingAvailability;
+  board->epSquare             = undo->epSquare;
+
   if (undo->captured != PIECE_NULL) boardSetPiece(board, dst, undo->captured);
 
   if (flag & MOVE_KING_CASTLE) {
@@ -219,6 +224,8 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
     Piece rook = (board->turn == WHITE) ? WR : BR;
     boardRemovePiece(board, dst - 2, rook);
     boardSetPiece(board, dst + 1, rook);
+  } else if (flag & MOVE_EP) {
+    boardSetPiece(board, undo->epCapturedSquare, board->turn == WHITE ? WP : BP);
   }
 
   board->turn = (board->turn == WHITE) ? BLACK : WHITE;
@@ -332,6 +339,7 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
   BitBoard enemyPieces     = (board->turn == WHITE) ? board->blacks : board->whites;
   BitBoard occupancy       = board->whites | board->blacks;
   BitBoard enemyKing       = (board->turn == WHITE) ? board->blackPieceBoards[KING] : board->whitePieceBoards[KING];
+  BitBoard enemyAttacks    = colorAttack(board, board->turn == WHITE ? BLACK : WHITE);
 
   CastlingAvailability canCastleKingSide =
       (board->turn == WHITE) ? board->castlingAvailability & CASTLE_WHITE_KING : board->castlingAvailability & CASTLE_BLACK_KING;
@@ -345,11 +353,11 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
   while (kings) {
     PositionIndex src = getLSB(&kings);
 
-    if (canCastleKingSide && !kingInCheck(board, board->turn) && !(occupancy & kingSideCastleMask) && !(board->enemyAttacks & kingSideCastleMask)) {
+    if (canCastleKingSide && !kingInCheck(board, board->turn) && !(occupancy & kingSideCastleMask) && !(enemyAttacks & kingSideCastleMask)) {
       *(*movePtr)++ = MOVE(MOVE_KING_CASTLE, src + 2, src);
     }
 
-    if (canCastleQueenSide && !kingInCheck(board, board->turn) && !(occupancy & queenSideCastleMask) && !(board->enemyAttacks & queenSideCastleMask)) {
+    if (canCastleQueenSide && !kingInCheck(board, board->turn) && !(occupancy & queenSideCastleMask) && !(enemyAttacks & queenSideCastleMask)) {
       *(*movePtr)++ = MOVE(MOVE_QUEEN_CASTLE, src - 2, src);
     }
 
@@ -388,11 +396,22 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
   BitBoard pawns = pieceBitboards[PAWN];
   while (pawns) {
     PositionIndex src = getLSB(&pawns);
-    BitBoard attacks  = pawnAttacks[board->turn][src] & enemyPieces;
+
+    BitBoard attacks = pawnAttacks[board->turn][src] & enemyPieces;
+
+    if (board->epSquare != NAP) {
+      BitBoard ep = POSITION_BIT(board->epSquare);
+      if (pawnAttacks[board->turn][src] & ep) {
+        attacks |= ep;
+      }
+    }
+
     while (attacks) {
       PositionIndex dst = getLSB(&attacks);
       int rank          = INDEX_RANK(dst);
-      if ((board->turn == WHITE && rank == 7) || (board->turn == BLACK && rank == 0)) {
+      if (dst == board->epSquare) {
+        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_EP, dst, src);
+      } else if ((board->turn == WHITE && rank == 7) || (board->turn == BLACK && rank == 0)) {
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_QUEEN_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_ROOK_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_BISHOP_PROMOTION, dst, src);
@@ -402,9 +421,8 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
       }
     }
 
-    BitBoard singleMove = pawnSingleMoves[board->turn][src] & ~occupancy;
-    BitBoard doubleMove = singleMove ? pawnDoubleMoves[board->turn][src] & ~occupancy : (BitBoard)0;
-    BitBoard moves      = singleMove | doubleMove;
+    BitBoard moves = pawnSingleMoves[board->turn][src] & ~occupancy;
+    moves |= moves ? pawnDoubleMoves[board->turn][src] & ~occupancy : (BitBoard)0;
     while (moves) {
       PositionIndex dst = getLSB(&moves);
       int rank          = INDEX_RANK(dst);
@@ -413,6 +431,8 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
         *(*movePtr)++ = MOVE(MOVE_ROOK_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_BISHOP_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_KNIGHT_PROMOTION, dst, src);
+      } else if (abs(dst - src) == 16) {
+        *(*movePtr)++ = MOVE(MOVE_DOUBLE_PUSH, dst, src);
       } else {
         *(*movePtr)++ = MOVE(MOVE_QUIET, dst, src);
       }
@@ -421,7 +441,6 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
 }
 
 unsigned int generateLegalMoves(Board* board, Move* moves) {
-  board->enemyAttacks = (BitBoard)0;
   for (int i = 0; i < MAX_CHESS_MOVES; ++i) moves[i] = (Move)0;
 
   Move pseudoLegalMoves[MAX_CHESS_MOVES] = {0};
@@ -435,9 +454,6 @@ unsigned int generateLegalMoves(Board* board, Move* moves) {
     UndoMove undo;
     boardMakeMove(board, *rPtr, &undo);
     if (!kingInCheck(board, movingSide)) {
-      PositionIndex dst = POSITION_BIT(DST(*rPtr));
-      board->enemyAttacks |= dst;
-      if (kingInCheck(board, !board->turn)) *rPtr |= MOVE(MOVE_CHECK, 0, 0);
       *wPtr++ = *rPtr;
     }
     boardUnmakeMove(board, &undo);

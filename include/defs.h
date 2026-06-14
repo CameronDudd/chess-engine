@@ -42,6 +42,8 @@
 typedef uint8_t PositionIndex;  // 0 bottom-left to 63 top-right
 typedef uint64_t BitBoard;
 
+#define NAP (PositionIndex)0xFF  // Not A Position
+
 typedef enum {
   WHITE = 0,
   BLACK = 1,

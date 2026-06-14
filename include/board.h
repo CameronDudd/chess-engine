@@ -56,7 +56,6 @@ typedef uint32_t Move;
 typedef uint16_t MoveFlag;
 
 #define MOVE_QUIET 0x0000
-#define MOVE_CHECK 0x0001
 #define MOVE_CAPTURE 0x0002
 #define MOVE_KING_CASTLE 0x0004
 #define MOVE_QUEEN_CASTLE 0x0008
@@ -64,14 +63,16 @@ typedef uint16_t MoveFlag;
 #define MOVE_QUEEN_PROMOTION 0x0020
 #define MOVE_BISHOP_PROMOTION 0x0040
 #define MOVE_KNIGHT_PROMOTION 0x0080
+#define MOVE_EP 0x0100
+#define MOVE_DOUBLE_PUSH 0x0200
 
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
 
 #define SRC(move) (PositionIndex)((move) & _6BIT_MASK)
 #define DST(move) (PositionIndex)(((move) >> 6) & _6BIT_MASK)
-#define FLAG(move) (MoveFlag)(((move) >> 12) & _4BIT_MASK)
-#define MOVE(flag, dst, src) (Move)((((flag) & _4BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
+#define FLAG(move) (MoveFlag)((move) >> 12)
+#define MOVE(flag, dst, src) (Move)(((flag) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
 typedef enum {
   CASTLE_WHITE_KING  = 0x1,
@@ -84,6 +85,8 @@ typedef struct {
   Move move;
   Piece captured;
   CastlingAvailability castlingAvailability;
+  PositionIndex epSquare;
+  PositionIndex epCapturedSquare;
 } UndoMove;
 
 typedef struct {
@@ -91,12 +94,11 @@ typedef struct {
 
   Color turn;
   CastlingAvailability castlingAvailability;
+  PositionIndex epSquare;
 
   // Bitboards
   BitBoard whites;
   BitBoard blacks;
-
-  BitBoard enemyAttacks;
 
   BitBoard whitePieceBoards[NUM_PIECE_TYPES];
   BitBoard blackPieceBoards[NUM_PIECE_TYPES];
@@ -106,10 +108,10 @@ typedef struct {
 void displayBoard(const Board* board);
 void displayBitBoard(const uint64_t bitboard);
 
-bool moveCheck(const Move move);
 bool moveCastle(const Move move);
 bool moveCapture(const Move move);
 bool movePromotion(const Move move);
+bool moveEP(const Move move);
 
 void initBoard(Board* board);
 void boardSetPiece(Board* board, const PositionIndex position, const Piece piece);
