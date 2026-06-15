@@ -33,7 +33,7 @@ C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
 LDFLAGS		:= -L$(ARGPARSE_LIB_DIR) -Wl,-Bstatic -largparse -Wl,-Bdynamic
 
 ifeq ($(BUILD),release)
-	CFLAGS := $(C_FLAGS_COMMON) -O2 -DNDEBUG
+	CFLAGS := $(C_FLAGS_COMMON) -O3 -march=native -DNDEBUG
 else
 	CFLAGS := $(C_FLAGS_COMMON) -O0 -g3 -DDEBUG
 endif
