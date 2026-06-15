@@ -318,11 +318,33 @@ BitBoard colorAttack(Board* board, Color side) {
   return attacks;
 }
 
+bool colorAttacksSquare(Board* board, PositionIndex position, Color side) {
+  BitBoard occupancy       = board->whites | board->blacks;
+  BitBoard* pieceBitboards = (side == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
+  Color oppositeSide       = (side == WHITE) ? BLACK : WHITE;
+
+  if (pieceBitboards[KING] & kingAttacks[position]) return true;
+  if (pieceBitboards[KNIGHT] & knightAttacks[position]) return true;
+  if (pieceBitboards[PAWN] & pawnAttacks[oppositeSide][position]) return true;
+  if ((pieceBitboards[ROOK] | pieceBitboards[QUEEN]) & rookMoves(position, occupancy)) return true;
+  if ((pieceBitboards[BISHOP] | pieceBitboards[QUEEN]) & bishopMoves(position, occupancy)) return true;
+
+  return false;
+}
+
+bool colorAttacksBitboard(Board* board, BitBoard bitboard, Color side) {
+  while (bitboard) {
+    PositionIndex position = getLSB(&bitboard);
+    if (colorAttacksSquare(board, position, side)) return true;
+  }
+  return false;
+}
+
 bool kingInCheck(Board* board, Color side) {
   if (side == WHITE) {
-    return (board->whitePieceBoards[KING] & colorAttack(board, BLACK)) != 0;
+    return colorAttacksSquare(board, __builtin_ctzll(board->whitePieceBoards[KING]), BLACK);
   }
-  return (board->blackPieceBoards[KING] & colorAttack(board, WHITE)) != 0;
+  return colorAttacksSquare(board, __builtin_ctzll(board->blackPieceBoards[KING]), WHITE);
 }
 
 void generatePseudoLegalMoves(Board* board, Move** movePtr) {

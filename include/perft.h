@@ -20,6 +20,6 @@ typedef struct {
   unsigned long long checkmates;
 } PerftResult;
 
-PerftResult perft(Board* board, int depth);
+PerftResult perft(Board* board, int depth, bool bulk);
 
 #endif  // PERFT_H

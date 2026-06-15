@@ -26,10 +26,12 @@ typedef struct {
 
 int perftModule(int argc, const char** argv) {
   int depth = 0;
+  bool bulk = false;
 
   struct argparse_option options[] = {
       OPT_HELP(),
       OPT_INTEGER('d', "depth", &depth, "depth", NULL, 0, 0),
+      OPT_BOOLEAN('b', "bulk", &bulk, "bulk", NULL, 0, 0),
       OPT_END(),
   };
 
@@ -50,7 +52,7 @@ int perftModule(int argc, const char** argv) {
   Board board;
   initBoard(&board);
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
-  PerftResult result = perft(&board, depth);
+  PerftResult result = perft(&board, depth, bulk);
   printf("depth %i | nodes %llu | captures %llu | e.p. %llu | castles %llu | promotions %llu | checks %llu | checkmates %llu \r\n", depth, result.nodes,
          result.captures, result.ep, result.castles, result.promotions, result.checks, result.checkmates);
   return 0;

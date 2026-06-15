@@ -2,7 +2,7 @@ CC = gcc
 
 MAJOR	:= 0
 MINOR	:= 0
-PATCH	:= 1
+PATCH	:= 2
 VERSION	:= v$(MAJOR).$(MINOR).$(PATCH)
 
 BUILD 		?= debug
