@@ -4,3 +4,6 @@
 [submodule "lib/Unity"]
 	path = lib/Unity
 	url = https://github.com/ThrowTheSwitch/Unity.git
+[submodule "lib/argparse"]
+	path = lib/argparse
+	url = git@github.com:cofyc/argparse.git

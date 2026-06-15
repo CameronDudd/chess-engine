@@ -21,12 +21,16 @@ LOG_LIB_DIR	:= lib/log.c/src
 LOG_LIB_SRC	:= $(wildcard $(LOG_LIB_DIR)/*.c)
 LOG_LIB_OBJ	:= $(LOG_LIB_SRC:$(LOG_LIB_DIR)/%.c=$(BUILD_DIR)/log/%.o)
 
+ARGPARSE_LIB_DIR	:= lib/argparse
+
 C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
 		   -MMD -MP \
 		   -I$(INCLUDE_DIR) \
 		   -I$(LOG_LIB_DIR) \
-		   -DLOG_USE_COLOR
-LDFLAGS		:=
+		   -I$(ARGPARSE_LIB_DIR) \
+		   -DLOG_USE_COLOR \
+		   -DTARGET=\"$(TARGET)\"
+LDFLAGS		:= -L$(ARGPARSE_LIB_DIR) -Wl,-Bstatic -largparse -Wl,-Bdynamic
 
 ifeq ($(BUILD),release)
 	CFLAGS := $(C_FLAGS_COMMON) -O2 -DNDEBUG
@@ -40,11 +44,12 @@ DEP := $(OBJ:.o=.d) $(LOG_LIB_OBJ:.o=.d)
 
 all: $(TARGET) compile_commands.json
 
-run: $(TARGET)
-	./$(TARGET)
+perft: $(TARGET)
+	./$(TARGET) perft -h
 
 init:
 	git submodule update --init --recursive
+	$(MAKE) -C lib/argparse
 
 $(TARGET): $(OBJ) $(LOG_LIB_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -77,7 +82,7 @@ info:
 	@echo "Compiler: $(CC)"
 	@echo "Build type: $(BUILD)"
 
-compile_commands.json: $(SRC) Makefile
+compile_commands.json: clean $(SRC) Makefile
 	@bear -- make $(TARGET)
 
-.PHONY: all init run clean cloc format check info compile_commands.json
+.PHONY: all init perft clean cloc format check info compile_commands.json
