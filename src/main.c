@@ -87,5 +87,6 @@ int main(int argc, const char* argv[]) {
   }
   if (module) return module->func(argc - 1, argv + 1);
 
-  return 0;
+  showUsage();
+  return 1;
 }
