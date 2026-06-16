@@ -11,7 +11,6 @@
 
 #include "board.h"
 #include "fen.h"
-#include "magics.h"
 #include "perft.h"
 
 #ifndef TARGET
@@ -25,7 +24,7 @@ typedef struct {
 } ModuleStruct;
 
 int perftModule(int argc, const char** argv) {
-  int depth = 0;
+  int depth = -1;
   bool bulk = false;
 
   struct argparse_option options[] = {
