@@ -68,7 +68,7 @@ perft: $(TARGET)
 play: $(TARGET)
 	./$(TARGET) play -h
 
-test: $(TEST_TARGET)
+tests: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 $(TARGET): $(OBJ) $(LOG_LIB_OBJ)
