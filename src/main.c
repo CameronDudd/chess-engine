@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "board.h"
 #include "engine.h"
@@ -19,13 +20,15 @@
 #define TARGET "chess-engine"
 #endif
 
+FILE* logFp = NULL;
+
 typedef struct {
   const char* module;
   const char* description;
-  int (*func)(const int, const char**);
+  void (*func)(const int, const char**);
 } ModuleStruct;
 
-int perftModule(int argc, const char** argv) {
+void perftModule(int argc, const char** argv) {
   int depth = -1;
   bool bulk = false;
 
@@ -47,7 +50,7 @@ int perftModule(int argc, const char** argv) {
   argc = argparse_parse(&argparse, argc, argv);
   if (argc != 0 || depth < 0) {
     argparse_usage(&argparse);
-    return 1;
+    return;
   }
 
   Board board;
@@ -56,10 +59,9 @@ int perftModule(int argc, const char** argv) {
   PerftResult result = perft(&board, depth, bulk);
   printf("depth %i | nodes %llu | captures %llu | e.p. %llu | castles %llu | promotions %llu | checks %llu | checkmates %llu \r\n", depth, result.nodes,
          result.captures, result.ep, result.castles, result.promotions, result.checks, result.checkmates);
-  return 0;
 }
 
-int playModule(int argc, const char** argv) {
+void playModule(int argc, const char** argv) {
   int white = 0;
   int black = 0;
 
@@ -81,7 +83,7 @@ int playModule(int argc, const char** argv) {
   argc = argparse_parse(&argparse, argc, argv);
   if (argc != 0 || (white == 0 && black == 0)) {
     argparse_usage(&argparse);
-    return 1;
+    return;
   }
 
   Color playerColor = white ? WHITE : BLACK;
@@ -103,8 +105,6 @@ int playModule(int argc, const char** argv) {
     boardMakeMove(&board, move, &undo);
     userQuit = (getchar() == 'q') ? true : false;
   }
-
-  return 0;
 }
 
 static ModuleStruct modules[] = {
@@ -117,12 +117,37 @@ static void showUsage(void) {
   for (size_t i = 0; i < sizeof(modules) / sizeof(modules[0]); ++i) printf("  %s - %s\n", modules[i].module, modules[i].description);
 }
 
-int main(int argc, const char* argv[]) {
+static void initLogging(void) {
 #ifdef DEBUG
   log_set_level(LOG_TRACE);
 #else
   log_set_level(LOG_INFO);
 #endif
+
+  time_t now    = time(NULL);
+  struct tm* lt = localtime(&now);
+  if (lt == NULL) {
+    log_error("failed to obtain localtime");
+    return;
+  }
+
+  char logFilename[128];
+  strftime(logFilename, sizeof(logFilename), "%d%m%Y_%H%M%S_" TARGET ".log", lt);
+  logFp = fopen(logFilename, "w");
+  if (logFp == NULL) {
+    log_error("failed to open log file %s", logFilename);
+    return;
+  }
+
+#ifdef DEBUG
+  log_add_fp(logFp, LOG_TRACE);
+#else
+  log_add_fp(logFp, LOG_INFO);
+#endif
+}
+
+int main(int argc, const char* argv[]) {
+  initLogging();
 
   if (argc < 2 || !strcmp("-h", argv[1])) {
     showUsage();
@@ -135,8 +160,13 @@ int main(int argc, const char* argv[]) {
       module = &modules[i];
     }
   }
-  if (module) return module->func(argc - 1, argv + 1);
+  if (module) {
+    module->func(argc - 1, argv + 1);
+  } else {
+    showUsage();
+  }
 
-  showUsage();
+  fclose(logFp);
+
   return 1;
 }
