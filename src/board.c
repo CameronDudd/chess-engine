@@ -6,6 +6,7 @@
 #include "board.h"
 
 #include <log.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -44,56 +45,56 @@ static char pieceChar(const Piece piece) {
 
 void displayBoard(const Board* board) {
   printf("  %s\r\n", BORDER);
-  for (int rank = 7; rank >= 0; --rank) {
+  for (int rank = MAX_RANK; rank >= 0; --rank) {
     printf("%c ", '1' + rank);
-    for (int file = 0; file < 8; ++file) {
+    for (int file = 0; file < NUM_FILES; ++file) {
       PositionIndex i = POS_INDEX(rank, file);
       printf("|%c", pieceChar(board->squares[i]));
     }
     printf("|\r\n");
   }
   printf("  %s\r\n   ", BORDER);
-  for (int file = 0; file < 8; ++file) {
+  for (int file = 0; file < NUM_FILES; ++file) {
     printf("%c ", 'a' + file);
   }
   printf("\r\n");
 }
 
-void displayBitBoard(const BitBoard board) {
+void displayBitBoard(BitBoard board) {
   printf("  %s\r\n", BORDER);
-  for (int rank = 7; rank >= 0; --rank) {
+  for (int rank = MAX_RANK; rank >= 0; --rank) {
     printf("%c ", '1' + rank);
-    for (int file = 0; file < 8; ++file) {
+    for (int file = 0; file < NUM_FILES; ++file) {
       PositionIndex i = POS_INDEX(rank, file);
       printf("|%c", (board & POSITION_BIT(i)) ? '*' : ' ');
     }
     printf("|\r\n");
   }
   printf("  %s\r\n   ", BORDER);
-  for (int file = 0; file < 8; ++file) {
+  for (int file = 0; file < NUM_FILES; ++file) {
     printf("%c ", 'a' + file);
   }
   printf("\r\n");
 }
 
-bool moveCastle(const Move move) {
+bool moveCastle(Move move) {
   return FLAG(move) & (MOVE_KING_CASTLE | MOVE_QUEEN_CASTLE);
 }
 
-bool moveCapture(const Move move) {
+bool moveCapture(Move move) {
   return FLAG(move) & MOVE_CAPTURE;
 }
 
-bool movePromotion(const Move move) {
+bool movePromotion(Move move) {
   return FLAG(move) & (MOVE_QUEEN_PROMOTION | MOVE_ROOK_PROMOTION | MOVE_BISHOP_PROMOTION | MOVE_KNIGHT_PROMOTION);
 }
 
-bool moveEP(const Move move) {
+bool moveEP(Move move) {
   return FLAG(move) & MOVE_EP;
 }
 
 void initCastlingAvailability(void) {
-  for (PositionIndex i = 0; i < NUM_POSITIONS; ++i) castlingAvailabilityLookup[i] = 0xFF;
+  for (PositionIndex i = 0; i < NUM_POSITIONS; ++i) castlingAvailabilityLookup[i] = NAP;
   castlingAvailabilityLookup[A1] = ~CASTLE_WHITE_QUEEN;
   castlingAvailabilityLookup[E1] = ~(CASTLE_WHITE_KING | CASTLE_WHITE_QUEEN);
   castlingAvailabilityLookup[H1] = ~CASTLE_WHITE_KING;
@@ -117,7 +118,7 @@ void initBoard(Board* board) {
   initCastlingAvailability();
 }
 
-void boardSetPiece(Board* board, const PositionIndex position, const Piece piece) {
+void boardSetPiece(Board* board, PositionIndex position, Piece piece) {
   if (piece == PIECE_NULL) return;
 
   if (PIECE_WHITE(piece)) {
@@ -183,7 +184,7 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {
     boardRemovePiece(board, dst - 2, rook);
     boardSetPiece(board, dst + 1, rook);
   } else if (flag & MOVE_EP) {
-    undo->epCapturedSquare = (board->turn == WHITE) ? dst - 8 : dst + 8;
+    undo->epCapturedSquare = (board->turn == WHITE) ? dst - NUM_FILES : dst + NUM_FILES;
     boardRemovePiece(board, undo->epCapturedSquare, (board->turn == WHITE) ? BP : WP);
   } else if (flag & MOVE_DOUBLE_PUSH) {
     board->epSquare = (src + dst) / 2;
@@ -243,6 +244,8 @@ void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAva
       break;
     case CASTLE_BLACK_QUEEN:
       log_debug("Setting board black queen castle available");
+      break;
+    default:
       break;
   }
 #endif
@@ -348,7 +351,7 @@ bool kingInCheck(Board* board, Color side) {
   return colorAttacksSquare(board, __builtin_ctzll(board->blackPieceBoards[KING]), WHITE);
 }
 
-void generatePseudoLegalMoves(Board* board, Move** movePtr) {
+void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(readability-function-cognitive-complexity)
   BitBoard* pieceBitboards = (board->turn == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
   BitBoard friendlyPieces  = (board->turn == WHITE) ? board->whites : board->blacks;
   BitBoard enemyPieces     = (board->turn == WHITE) ? board->blacks : board->whites;
@@ -428,7 +431,7 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
       int rank          = INDEX_RANK(dst);
       if (dst == board->epSquare) {
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_EP, dst, src);
-      } else if ((board->turn == WHITE && rank == 7) || (board->turn == BLACK && rank == 0)) {
+      } else if ((board->turn == WHITE && rank == MAX_RANK) || (board->turn == BLACK && rank == 0)) {
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_QUEEN_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_ROOK_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_BISHOP_PROMOTION, dst, src);
@@ -443,12 +446,12 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
     while (moves) {
       PositionIndex dst = getLSB(&moves);
       int rank          = INDEX_RANK(dst);
-      if ((board->turn == WHITE && rank == 7) || (board->turn == BLACK && rank == 0)) {
+      if ((board->turn == WHITE && rank == MAX_RANK) || (board->turn == BLACK && rank == 0)) {
         *(*movePtr)++ = MOVE(MOVE_QUEEN_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_ROOK_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_BISHOP_PROMOTION, dst, src);
         *(*movePtr)++ = MOVE(MOVE_KNIGHT_PROMOTION, dst, src);
-      } else if (abs(dst - src) == 16) {
+      } else if (abs(dst - src) == (NUM_FILES * 2)) {
         *(*movePtr)++ = MOVE(MOVE_DOUBLE_PUSH, dst, src);
       } else {
         *(*movePtr)++ = MOVE(MOVE_QUIET, dst, src);

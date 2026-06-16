@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "board.h"
+#include "defs.h"
 #include "engine.h"
 #include "fen.h"
 #include "perft.h"
@@ -19,6 +20,8 @@
 #ifndef TARGET
 #define TARGET "chess-engine"
 #endif
+
+#define LOG_FILENAME_SIZE 128  // NOLINT(modernize-macro-to-enum)
 
 FILE* logFp = NULL;
 
@@ -92,12 +95,12 @@ void playModule(int argc, const char** argv) {
   initBoard(&board);
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
 
-  Move move;
+  Move move = 0;
   UndoMove undo;
   bool userQuit = false;
   while (!userQuit) {
     displayBoard(&board);
-    if (board.turn == playerColor) {
+    if (board.turn == playerColor) {  // NOLINT(bugprone-branch-clone)
       move = engineBestMove(&board);
     } else {
       move = engineBestMove(&board);
@@ -124,15 +127,18 @@ static void initLogging(void) {
   log_set_level(LOG_INFO);
 #endif
 
-  time_t now    = time(NULL);
-  struct tm* lt = localtime(&now);
-  if (lt == NULL) {
+  time_t now           = time(NULL);
+  struct tm* localTime = localtime(&now);  // NOLINT(concurrency-mt-unsafe)
+  if (localTime == NULL) {
     log_error("failed to obtain localtime");
     return;
   }
 
-  char logFilename[128];
-  strftime(logFilename, sizeof(logFilename), "%d%m%Y_%H%M%S_" TARGET ".log", lt);
+  char logFilename[LOG_FILENAME_SIZE];
+  if (!strftime(logFilename, sizeof(logFilename), "%d%m%Y_%H%M%S_" TARGET ".log", localTime)) {
+    log_error("failed to format time string");
+    return;
+  }
   logFp = fopen(logFilename, "w");
   if (logFp == NULL) {
     log_error("failed to open log file %s", logFilename);
@@ -166,7 +172,9 @@ int main(int argc, const char* argv[]) {
     showUsage();
   }
 
-  fclose(logFp);
+  if (logFp && fclose(logFp)) {
+    log_error("Failed to close log file");
+  }
 
   return 1;
 }

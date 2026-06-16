@@ -13,7 +13,7 @@ Move engineBestMove(Board* board) {
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
   if (numMoves > 0) {
-    int randIdx = ((float)rand() * (float)numMoves) / (float)RAND_MAX;
+    unsigned int randIdx = (unsigned int)(rand() % numMoves);  // NOLINT(cert-msc30-c,cert-msc50-cpp,concurrency-mt-unsafe)
     return moves[randIdx];
   }
   return (Move)0;

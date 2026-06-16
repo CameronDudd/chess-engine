@@ -19,7 +19,7 @@ void addPerft(PerftResult* a, const PerftResult b) {
   a->checkmates += b.checkmates;
 }
 
-PerftResult perft(Board* board, int depth, bool bulk) {
+PerftResult perft(Board* board, int depth, bool bulk) {  // NOLINT(readability-function-cognitive-complexity)
   if (depth == 0) return (PerftResult){.nodes = 1};
 
   Move moves[MAX_CHESS_MOVES];

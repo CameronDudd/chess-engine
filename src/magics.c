@@ -6,9 +6,12 @@
 #include "magics.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include "defs.h"
+
+#define BITBOARD_SEED (BitBoard)8392615925280821472
 
 const BitBoard RookMagics[NUM_POSITIONS] = {
     0x48000908A204000,  0x40400010002000,   0xB00100900402000,  0x8880045800100080, 0xA0002005160080C,  0x3280020080090400, 0x300010000C43200,
@@ -43,8 +46,8 @@ int rookNumBits[NUM_POSITIONS];
 int bishopNumBits[NUM_POSITIONS];
 
 BitBoard kingAttacks[NUM_POSITIONS];
-BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
-BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
+BitBoard rookAttacks[NUM_POSITIONS][ROOK_TABLE_MAX];
+BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_TABLE_MAX];
 BitBoard knightAttacks[NUM_POSITIONS];
 BitBoard pawnAttacks[2][NUM_POSITIONS];
 BitBoard pawnSingleMoves[2][NUM_POSITIONS];
@@ -52,15 +55,15 @@ BitBoard pawnDoubleMoves[2][NUM_POSITIONS];
 
 // https://en.wikipedia.org/wiki/Xorshift
 BitBoard xorshift64() {
-  static BitBoard seed = (BitBoard)8392615925280821472;
-  seed ^= seed << 13;
-  seed ^= seed >> 7;
-  seed ^= seed << 17;
+  static BitBoard seed = BITBOARD_SEED;
+  seed ^= seed << 13;  // NOLINT(readability-magic-numbers)
+  seed ^= seed >> 7;   // NOLINT(readability-magic-numbers)
+  seed ^= seed << 17;  // NOLINT(readability-magic-numbers)
   return seed;
 }
 
 BitBoard sparsexorshift64(void) {
-  return xorshift64() & xorshift64() & xorshift64();
+  return xorshift64() & xorshift64() & xorshift64();  // NOLINT(misc-redundant-expression)
 }
 
 BitBoard occupancyMask(int index, BitBoard mask) {
@@ -80,8 +83,8 @@ BitBoard occupancyMask(int index, BitBoard mask) {
 BitBoard rookMask(int rank, int file) {
   BitBoard mask = (BitBoard)0;
   for (int r = rank - 1; r > 0; --r) mask |= POSITION_BIT((r * 8) + file);
-  for (int c = file + 1; c < 7; ++c) mask |= POSITION_BIT((rank * 8) + c);
-  for (int r = rank + 1; r < 7; ++r) mask |= POSITION_BIT((r * 8) + file);
+  for (int c = file + 1; c < MAX_FILE; ++c) mask |= POSITION_BIT((rank * 8) + c);
+  for (int r = rank + 1; r < MAX_RANK; ++r) mask |= POSITION_BIT((r * 8) + file);
   for (int c = file - 1; c > 0; --c) mask |= POSITION_BIT((rank * 8) + c);
   return mask;
 }
@@ -90,25 +93,25 @@ BitBoard rookLegalMoves(int rank, int file, BitBoard occupancyMask) {
   BitBoard mask = (BitBoard)0;
 
   for (int r = rank - 1; r >= 0; --r) {
-    int pos = (r * 8) + file;
+    int pos = (r * NUM_FILES) + file;
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
-  for (int c = file + 1; c < 8; ++c) {
-    int pos = (rank * 8) + c;
+  for (int c = file + 1; c < NUM_FILES; ++c) {
+    int pos = (rank * NUM_FILES) + c;
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
-  for (int r = rank + 1; r < 8; ++r) {
-    int pos = (r * 8) + file;
+  for (int r = rank + 1; r < NUM_RANKS; ++r) {
+    int pos = (r * NUM_FILES) + file;
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1; c >= 0; --c) {
-    int pos = ((rank * 8) + c);
+    int pos = ((rank * NUM_FILES) + c);
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
@@ -116,23 +119,23 @@ BitBoard rookLegalMoves(int rank, int file, BitBoard occupancyMask) {
   return mask;
 }
 
-void rookMagicNumbers(void) {
+void rookMagicNumbers(void) {  // NOLINT(readability-function-cognitive-complexity)
   printf("const BitBoard RookMagics[NUM_POSITIONS] = {");
-  for (int rank = 0; rank < 8; ++rank) {
-    for (int file = 0; file < 8; ++file) {
+  for (int rank = 0; rank < NUM_RANKS; ++rank) {
+    for (int file = 0; file < NUM_FILES; ++file) {
       BitBoard mask     = rookMask(rank, file);
       int bitsCount     = __builtin_popcountll(mask);
       int numVariations = 1 << bitsCount;
 
-      BitBoard occupancies[4096];
-      BitBoard legalMoves[4096];
+      BitBoard occupancies[ROOK_TABLE_MAX];
+      BitBoard legalMoves[ROOK_TABLE_MAX];
 
       for (int v = 0; v < numVariations; ++v) {
         occupancies[v] = occupancyMask(v, mask);
         legalMoves[v]  = rookLegalMoves(rank, file, occupancies[v]);
       }
 
-      BitBoard tmp[4096];
+      BitBoard tmp[ROOK_TABLE_MAX];
       bool fail;
 
       while (1) {
@@ -140,7 +143,7 @@ void rookMagicNumbers(void) {
         for (int t = 0; t < numVariations; ++t) tmp[t] = (BitBoard)0;
         fail = false;
         for (int v = 0; v < numVariations; ++v) {
-          int magicIdx = (occupancies[v] * candidate) >> (NUM_POSITIONS - bitsCount);
+          int magicIdx = (int)(occupancies[v] * candidate) >> (NUM_POSITIONS - bitsCount);
           if (tmp[magicIdx] == (BitBoard)0) {
             tmp[magicIdx] = legalMoves[v];
           } else if (tmp[magicIdx] != legalMoves[v]) {
@@ -160,36 +163,36 @@ void rookMagicNumbers(void) {
 
 BitBoard bishopMask(int rank, int file) {
   BitBoard mask = (BitBoard)0;
-  for (int c = file + 1, r = rank + 1; c < 7 && r < 7; ++c, ++r) mask |= POSITION_BIT((r * 8) + c);
-  for (int c = file + 1, r = rank - 1; c < 7 && r > 0; ++c, --r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file + 1, r = rank + 1; c < MAX_FILE && r < MAX_RANK; ++c, ++r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file + 1, r = rank - 1; c < MAX_FILE && r > 0; ++c, --r) mask |= POSITION_BIT((r * 8) + c);
   for (int c = file - 1, r = rank - 1; c > 0 && r > 0; --c, --r) mask |= POSITION_BIT((r * 8) + c);
-  for (int c = file - 1, r = rank + 1; c > 0 && r < 7; --c, ++r) mask |= POSITION_BIT((r * 8) + c);
+  for (int c = file - 1, r = rank + 1; c > 0 && r < MAX_RANK; --c, ++r) mask |= POSITION_BIT((r * 8) + c);
   return mask;
 }
 
 BitBoard bishopLegalMoves(int rank, int file, BitBoard occupancyMask) {
   BitBoard mask = (BitBoard)0;
 
-  for (int c = file + 1, r = rank + 1; c < 8 && r < 8; ++c, ++r) {
-    int pos = ((r * 8) + c);
+  for (int c = file + 1, r = rank + 1; c < NUM_FILES && r < NUM_RANKS; ++c, ++r) {
+    int pos = ((r * NUM_FILES) + c);
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
-  for (int c = file + 1, r = rank - 1; c < 8 && r >= 0; ++c, --r) {
-    int pos = ((r * 8) + c);
+  for (int c = file + 1, r = rank - 1; c < NUM_FILES && r >= 0; ++c, --r) {
+    int pos = ((r * NUM_FILES) + c);
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
   for (int c = file - 1, r = rank - 1; c >= 0 && r >= 0; --c, --r) {
-    int pos = ((r * 8) + c);
+    int pos = ((r * NUM_FILES) + c);
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
 
-  for (int c = file - 1, r = rank + 1; c >= 0 && r < 8; --c, ++r) {
-    int pos = ((r * 8) + c);
+  for (int c = file - 1, r = rank + 1; c >= 0 && r < NUM_FILES; --c, ++r) {
+    int pos = ((r * NUM_FILES) + c);
     mask |= POSITION_BIT(pos);
     if (POSITION_BIT(pos) & occupancyMask) break;
   }
@@ -197,23 +200,23 @@ BitBoard bishopLegalMoves(int rank, int file, BitBoard occupancyMask) {
   return mask;
 }
 
-void bishopMagicNumbers(void) {
+void bishopMagicNumbers(void) {  // NOLINT(readability-function-cognitive-complexity)
   printf("const BitBoard BishopMagics[NUM_POSITIONS] = {");
-  for (int rank = 0; rank < 8; ++rank) {
-    for (int file = 0; file < 8; ++file) {
+  for (int rank = 0; rank < NUM_RANKS; ++rank) {
+    for (int file = 0; file < NUM_FILES; ++file) {
       BitBoard mask     = bishopMask(rank, file);
       int bitsCount     = __builtin_popcountll(mask);
       int numVariations = 1 << bitsCount;
 
-      BitBoard occupancies[512];
-      BitBoard legalMoves[512];
+      BitBoard occupancies[BISHOP_TABLE_MAX];
+      BitBoard legalMoves[BISHOP_TABLE_MAX];
 
       for (int v = 0; v < numVariations; ++v) {
         occupancies[v] = occupancyMask(v, mask);
         legalMoves[v]  = bishopLegalMoves(rank, file, occupancies[v]);
       }
 
-      BitBoard tmp[512];
+      BitBoard tmp[BISHOP_TABLE_MAX];
       bool fail;
 
       while (1) {
@@ -221,7 +224,7 @@ void bishopMagicNumbers(void) {
         for (int t = 0; t < numVariations; ++t) tmp[t] = (BitBoard)0;
         fail = false;
         for (int v = 0; v < numVariations; ++v) {
-          int magicIdx = (occupancies[v] * candidate) >> (NUM_POSITIONS - bitsCount);
+          int magicIdx = (int)(occupancies[v] * candidate) >> (NUM_POSITIONS - bitsCount);
           if (tmp[magicIdx] == (BitBoard)0) {
             tmp[magicIdx] = legalMoves[v];
           } else if (tmp[magicIdx] != legalMoves[v]) {
@@ -239,7 +242,7 @@ void bishopMagicNumbers(void) {
   printf("};\r\n");
 }
 
-void initMagicAttacks(void) {
+void initMagicAttacks(void) {  // NOLINT(readability-function-cognitive-complexity)
   int bits;
   int variations;
   BitBoard attackMask;
@@ -255,7 +258,7 @@ void initMagicAttacks(void) {
         if (dr == 0 && df == 0) continue;
         int r = rank + dr;
         int f = file + df;
-        if (r < 0 || r > 7 || f < 0 || f > 7) continue;
+        if (r < 0 || r > MAX_RANK || f < 0 || f > MAX_FILE) continue;
         k |= POSITION_BIT(POS_INDEX(r, f));
       }
     }
@@ -270,7 +273,7 @@ void initMagicAttacks(void) {
     for (int v = 0; v < variations; ++v) {
       BitBoard occupancy      = occupancyMask(v, attackMask);
       BitBoard moves          = rookLegalMoves(rank, file, occupancy);
-      int magic               = (occupancy * RookMagics[pos]) >> (NUM_POSITIONS - bits);
+      size_t magic            = (occupancy * RookMagics[pos]) >> (NUM_POSITIONS - bits);
       rookAttacks[pos][magic] = moves;
     }
 
@@ -283,7 +286,7 @@ void initMagicAttacks(void) {
     for (int v = 0; v < variations; ++v) {
       BitBoard occupancy        = occupancyMask(v, attackMask);
       BitBoard moves            = bishopLegalMoves(rank, file, occupancy);
-      int magic                 = (occupancy * BishopMagics[pos]) >> (NUM_POSITIONS - bits);
+      size_t magic              = (occupancy * BishopMagics[pos]) >> (NUM_POSITIONS - bits);
       bishopAttacks[pos][magic] = moves;
     }
 
@@ -291,10 +294,10 @@ void initMagicAttacks(void) {
     BitBoard n      = (BitBoard)0;
     const int dr[8] = {2, 2, 1, 1, -1, -1, -2, -2};
     const int df[8] = {-1, 1, -2, 2, -2, 2, -1, 1};
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < NUM_RANKS; ++i) {
       int r = rank + dr[i];
       int f = file + df[i];
-      if ((0 <= r) && (r < 8) && (0 <= f) && (f < 8)) {
+      if ((0 <= r) && (r < NUM_RANKS) && (0 <= f) && (f < NUM_RANKS)) {
         n |= POSITION_BIT(POS_INDEX(r, f));
       }
     }
@@ -302,23 +305,23 @@ void initMagicAttacks(void) {
 
     // WHITE PAWN
     if (rank == 1) pawnDoubleMoves[WHITE][pos] = POSITION_BIT(POS_INDEX(rank + 2, file));
-    if (rank < 7) pawnSingleMoves[WHITE][pos] = POSITION_BIT(POS_INDEX(rank + 1, file));
+    if (rank < MAX_RANK) pawnSingleMoves[WHITE][pos] = POSITION_BIT(POS_INDEX(rank + 1, file));
 
     BitBoard wp = (BitBoard)0;
-    if (rank < 7) {
+    if (rank < MAX_RANK) {
       if (file > 0) wp |= POSITION_BIT(POS_INDEX(rank + 1, file - 1));
-      if (file < 7) wp |= POSITION_BIT(POS_INDEX(rank + 1, file + 1));
+      if (file < MAX_RANK) wp |= POSITION_BIT(POS_INDEX(rank + 1, file + 1));
     }
     pawnAttacks[WHITE][pos] = wp;
 
     // BLACK PAWN
-    if (rank == 6) pawnDoubleMoves[BLACK][pos] = POSITION_BIT(POS_INDEX(rank - 2, file));
+    if (rank == (MAX_RANK - 1)) pawnDoubleMoves[BLACK][pos] = POSITION_BIT(POS_INDEX(rank - 2, file));
     if (rank > 0) pawnSingleMoves[BLACK][pos] = POSITION_BIT(POS_INDEX(rank - 1, file));
 
     BitBoard bp = (BitBoard)0;
     if (rank > 0) {
       if (file > 0) bp |= POSITION_BIT(POS_INDEX(rank - 1, file - 1));
-      if (file < 7) bp |= POSITION_BIT(POS_INDEX(rank - 1, file + 1));
+      if (file < MAX_RANK) bp |= POSITION_BIT(POS_INDEX(rank - 1, file + 1));
     }
     pawnAttacks[BLACK][pos] = bp;
   }

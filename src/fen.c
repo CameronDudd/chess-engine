@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "board.h"
+#include "defs.h"
 
 static Piece fenPiece(const char fen) {
   switch (fen) {
@@ -41,7 +42,7 @@ static Piece fenPiece(const char fen) {
 }
 
 void fenPopulateBoard(const char* fen, Board* board) {
-  uint8_t rank = 7;
+  uint8_t rank = MAX_RANK;
   uint8_t file = 0;
   char c;
 
@@ -61,7 +62,7 @@ void fenPopulateBoard(const char* fen, Board* board) {
       continue;
     }
 
-    boardSetPiece(board, rank * 8 + file, fenPiece(c));
+    boardSetPiece(board, (rank * NUM_FILES) + file, fenPiece(c));
     ++file;
   }
 
@@ -85,18 +86,20 @@ void fenPopulateBoard(const char* fen, Board* board) {
       case 'q':
         boardSetCastlingAvailability(board, CASTLE_BLACK_QUEEN);
         break;
+      default:
+        break;
     }
   }
 
   // TODO: En Passant
-  while ((c = *fen++) != ' ') {
+  while ((c = *fen++) != ' ') {  // NOLINT(clang-analyzer-deadcode.DeadStores)
   }
 
   // TODO: Halfmove
-  while ((c = *fen++) != ' ') {
+  while ((c = *fen++) != ' ') {  // NOLINT(clang-analyzer-deadcode.DeadStores)
   }
 
   // TODO: Fullmove
-  while ((c = *fen++) != '\0') {
+  while ((c = *fen++) != '\0') {  // NOLINT(clang-analyzer-deadcode.DeadStores)
   }
 }

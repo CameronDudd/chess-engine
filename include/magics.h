@@ -10,8 +10,8 @@
 
 #include "defs.h"
 
-#define ROOK_VARIATIONS 4096
-#define BISHOP_VARIATIONS 512
+#define ROOK_TABLE_MAX 4096   // NOLINT(modernize-macro-to-enum)
+#define BISHOP_TABLE_MAX 512  // NOLINT(modernize-macro-to-enum)
 
 extern const BitBoard RookMagics[NUM_POSITIONS];
 extern const BitBoard BishopMagics[NUM_POSITIONS];
@@ -23,8 +23,8 @@ extern int rookNumBits[NUM_POSITIONS];
 extern int bishopNumBits[NUM_POSITIONS];
 
 extern BitBoard kingAttacks[NUM_POSITIONS];
-extern BitBoard rookAttacks[NUM_POSITIONS][ROOK_VARIATIONS];
-extern BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_VARIATIONS];
+extern BitBoard rookAttacks[NUM_POSITIONS][ROOK_TABLE_MAX];
+extern BitBoard bishopAttacks[NUM_POSITIONS][BISHOP_TABLE_MAX];
 extern BitBoard knightAttacks[NUM_POSITIONS];
 extern BitBoard pawnAttacks[2][NUM_POSITIONS];
 extern BitBoard pawnSingleMoves[2][NUM_POSITIONS];
