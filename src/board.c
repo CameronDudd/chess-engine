@@ -151,7 +151,7 @@ Piece boardGetPiece(const Board* board, PositionIndex position) {
   return board->squares[position];
 }
 
-void boardMakeMove(Board* board, Move move, UndoMove* undo) {
+void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readability-function-cognitive-complexity)
   PositionIndex src = SRC(move);
   PositionIndex dst = DST(move);
   MoveFlag flag     = FLAG(move);
