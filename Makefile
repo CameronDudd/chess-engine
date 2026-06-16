@@ -32,6 +32,7 @@ UNITY_LIB_SRCS		:= $(foreach dir,$(UNITY_LIB_SRC_DIRS),$(wildcard $(dir)/*.c))
 UNITY_LIB_OBJS		:= $(patsubst lib/Unity/%.c, $(BUILD_DIR)/unity/%.o, $(UNITY_LIB_SRCS))
 
 ARGPARSE_LIB_DIR	:= lib/argparse
+ARGPARSE_LIB		:= $(ARGPARSE_LIB_DIR)/libargparse.a
 
 C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
 		   -MMD -MP \
@@ -43,7 +44,7 @@ C_FLAGS_COMMON	:= -Wall -Wextra -std=c11 \
 		   -DTARGET=\"$(TARGET)\" \
 	           -DUNITY_OUTPUT_COLOR
 
-LDFLAGS		:= -L$(ARGPARSE_LIB_DIR) -Wl,-Bstatic -largparse -Wl,-Bdynamic
+LDFLAGS		:= $(ARGPARSE_LIB)
 
 ifeq ($(BUILD),release)
 	CFLAGS := $(C_FLAGS_COMMON) -O3 -march=native -DNDEBUG
