@@ -74,8 +74,6 @@ int main(int argc, const char* argv[]) {
   log_set_level(LOG_INFO);
 #endif
 
-  initMagicAttacks();
-
   if (argc < 2 || !strcmp("-h", argv[1])) {
     showUsage();
     return 1;

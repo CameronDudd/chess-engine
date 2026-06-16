@@ -113,6 +113,7 @@ void initBoard(Board* board) {
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->whitePieceBoards[i] = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->blackPieceBoards[i] = (BitBoard)0;
 
+  initMagicAttacks();
   initCastlingAvailability();
 }
 
@@ -457,10 +458,8 @@ void generatePseudoLegalMoves(Board* board, Move** movePtr) {
 }
 
 unsigned int generateLegalMoves(Board* board, Move* moves) {
-  for (int i = 0; i < MAX_CHESS_MOVES; ++i) moves[i] = (Move)0;
-
-  Move pseudoLegalMoves[MAX_CHESS_MOVES] = {0};
-  Move* movePtr                          = pseudoLegalMoves;
+  Move pseudoLegalMoves[MAX_CHESS_MOVES];
+  Move* movePtr = pseudoLegalMoves;
   generatePseudoLegalMoves(board, &movePtr);
 
   Move* end  = movePtr;
