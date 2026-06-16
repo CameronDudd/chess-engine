@@ -7,9 +7,11 @@
 #include <log.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "board.h"
+#include "engine.h"
 #include "fen.h"
 #include "perft.h"
 
@@ -57,8 +59,57 @@ int perftModule(int argc, const char** argv) {
   return 0;
 }
 
+int playModule(int argc, const char** argv) {
+  int white = 0;
+  int black = 0;
+
+  struct argparse_option options[] = {
+      OPT_HELP(),
+      OPT_BOOLEAN('w', "white", &white, "play as white", NULL, 0, 0),
+      OPT_BOOLEAN('b', "black", &black, "play as black", NULL, 0, 0),
+      OPT_END(),
+  };
+
+  const char* const playModuleUsages[] = {
+      TARGET " play",
+      NULL,
+  };
+
+  struct argparse argparse;
+  argparse_init(&argparse, options, playModuleUsages, ARGPARSE_STOP_AT_NON_OPTION);
+  argparse_describe(&argparse, "\nplay against the engine", "");
+  argc = argparse_parse(&argparse, argc, argv);
+  if (argc != 0 || (white == 0 && black == 0)) {
+    argparse_usage(&argparse);
+    return 1;
+  }
+
+  Color playerColor = white ? WHITE : BLACK;
+
+  Board board;
+  initBoard(&board);
+  fenPopulateBoard(FEN_STARTING_POSITION, &board);
+
+  Move move;
+  UndoMove undo;
+  bool userQuit = false;
+  while (!userQuit) {
+    displayBoard(&board);
+    if (board.turn == playerColor) {
+      move = engineBestMove(&board);
+    } else {
+      move = engineBestMove(&board);
+    }
+    boardMakeMove(&board, move, &undo);
+    userQuit = (getchar() == 'q') ? true : false;
+  }
+
+  return 0;
+}
+
 static ModuleStruct modules[] = {
     {"perft", "run perft test", perftModule},
+    {"play", "play against the engine", playModule},
 };
 
 static void showUsage(void) {

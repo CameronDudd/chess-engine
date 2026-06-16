@@ -65,6 +65,9 @@ all: $(TARGET)
 perft: $(TARGET)
 	./$(TARGET) perft -h
 
+play: $(TARGET)
+	./$(TARGET) play -h
+
 test: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
