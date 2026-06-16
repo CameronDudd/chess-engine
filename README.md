@@ -31,14 +31,15 @@ Depth|Nodes|Captures|E.P.|Castles|Promotions|Checks|Checkmates
 
 CPU|Version|Depth|Time
 :--|------:|----:|----:
-AMD Ryzen 5 5600X|0.0.2|4|0.017
-AMD Ryzen 5 5600X|0.0.2|5|0.203
-AMD Ryzen 5 5600X|0.0.2|6|4.730
+Apple M1 Pro|0.0.2|8|39m24.91s
+AMD Ryzen 5 5600X|0.0.2|4|0.017s
+AMD Ryzen 5 5600X|0.0.2|5|0.203s
+AMD Ryzen 5 5600X|0.0.2|6|4.730s
 AMD Ryzen 5 5600X|0.0.2|7|2m9.12s
 AMD Ryzen 5 5600X|0.0.2|8|56m30.28s
-AMD Ryzen 5 5600X|0.0.1|4|0.019
-AMD Ryzen 5 5600X|0.0.1|5|0.243
-AMD Ryzen 5 5600X|0.0.1|6|5.406
+AMD Ryzen 5 5600X|0.0.1|4|0.019s
+AMD Ryzen 5 5600X|0.0.1|5|0.243s
+AMD Ryzen 5 5600X|0.0.1|6|5.406s
 AMD Ryzen 5 5600X|0.0.1|7|2m24.60s
 Apple M1 Pro|0.0.1|4|0.268s
 Apple M1 Pro|0.0.1|5|0.635s
@@ -50,13 +51,13 @@ Personal Lenovo|0.0.1|8|1h14m26.03s
 
 CPU|Version|Depth|Time
 :--|------:|----:|---:
-AMD Ryzen 5 5600X|0.0.2|4|0.013
-AMD Ryzen 5 5600X|0.0.2|5|0.107
-AMD Ryzen 5 5600X|0.0.2|6|2.381
-AMD Ryzen 5 5600X|0.0.2|7|56.993
-AMD Ryzen 5 5600X|0.0.1|4|0.019
-AMD Ryzen 5 5600X|0.0.1|5|0.239
-AMD Ryzen 5 5600X|0.0.1|6|5.665
+AMD Ryzen 5 5600X|0.0.2|4|0.013s
+AMD Ryzen 5 5600X|0.0.2|5|0.107s
+AMD Ryzen 5 5600X|0.0.2|6|2.381s
+AMD Ryzen 5 5600X|0.0.2|7|56.993s
+AMD Ryzen 5 5600X|0.0.1|4|0.019s
+AMD Ryzen 5 5600X|0.0.1|5|0.239s
+AMD Ryzen 5 5600X|0.0.1|6|5.665s
 AMD Ryzen 5 5600X|0.0.1|7|2m23.28s
 Apple M1 Pro|0.0.1|4|0.254s
 Apple M1 Pro|0.0.1|5|0.351s
