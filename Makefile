@@ -95,7 +95,7 @@ clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
 cloc:
-	cloc --md $(SRC_DIR) $(INCLUDE_DIR)
+	cloc --md $(SRC_DIR) $(INCLUDE_DIR) $(TEST_DIR)
 
 format:
 	clang-format -i $(SRC)
