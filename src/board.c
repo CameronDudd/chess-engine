@@ -188,6 +188,18 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {
     boardRemovePiece(board, undo->epCapturedSquare, (board->turn == WHITE) ? BP : WP);
   } else if (flag & MOVE_DOUBLE_PUSH) {
     board->epSquare = (src + dst) / 2;
+  } else if (flag & MOVE_QUEEN_PROMOTION) {
+    boardRemovePiece(board, dst, piece);
+    boardSetPiece(board, dst, (board->turn == WHITE) ? WQ : BQ);
+  } else if (flag & MOVE_ROOK_PROMOTION) {
+    boardRemovePiece(board, dst, piece);
+    boardSetPiece(board, dst, (board->turn == WHITE) ? WR : BR);
+  } else if (flag & MOVE_BISHOP_PROMOTION) {
+    boardRemovePiece(board, dst, piece);
+    boardSetPiece(board, dst, (board->turn == WHITE) ? WB : BB);
+  } else if (flag & MOVE_KNIGHT_PROMOTION) {
+    boardRemovePiece(board, dst, piece);
+    boardSetPiece(board, dst, (board->turn == WHITE) ? WN : BN);
   }
 
   board->turn = (board->turn == WHITE) ? BLACK : WHITE;
@@ -203,6 +215,11 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
   Piece piece = board->squares[dst];
 
   boardRemovePiece(board, dst, piece);
+
+  if (flag & (MOVE_QUEEN_PROMOTION | MOVE_ROOK_PROMOTION | MOVE_BISHOP_PROMOTION | MOVE_KNIGHT_PROMOTION)) {
+    piece = (board->turn == WHITE) ? BP : WP;
+  }
+
   boardSetPiece(board, src, piece);
 
   board->castlingAvailability = undo->castlingAvailability;
