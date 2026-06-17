@@ -66,6 +66,8 @@ typedef uint16_t MoveFlag;
 #define MOVE_EP 0x0100
 #define MOVE_DOUBLE_PUSH 0x0200
 
+#define MOVE_PROMOTION 0x00F0
+
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
 
