@@ -1,9 +1,10 @@
 CC = gcc
 
-MAJOR	:= 0
-MINOR	:= 0
-PATCH	:= 2
-VERSION	:= v$(MAJOR).$(MINOR).$(PATCH)
+MAJOR		:= 0
+MINOR		:= 0
+PATCH		:= 3
+PRE_RELEASE	:= alpha
+VERSION	:= v$(MAJOR).$(MINOR).$(PATCH)-$(PRE_RELEASE)
 
 BUILD 		?= debug
 TARGET_BASE 	:= main
