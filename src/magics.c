@@ -54,7 +54,7 @@ BitBoard pawnSingleMoves[2][NUM_POSITIONS];
 BitBoard pawnDoubleMoves[2][NUM_POSITIONS];
 
 // https://en.wikipedia.org/wiki/Xorshift
-BitBoard xorshift64() {
+static BitBoard xorshift64() {
   static BitBoard seed = BITBOARD_SEED;
   seed ^= seed << 13;  // NOLINT(readability-magic-numbers)
   seed ^= seed >> 7;   // NOLINT(readability-magic-numbers)
@@ -62,7 +62,7 @@ BitBoard xorshift64() {
   return seed;
 }
 
-BitBoard sparsexorshift64(void) {
+static BitBoard sparsexorshift64(void) {
   return xorshift64() & xorshift64() & xorshift64();  // NOLINT(misc-redundant-expression)
 }
 

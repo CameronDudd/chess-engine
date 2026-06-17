@@ -23,7 +23,7 @@
 
 #define LOG_FILENAME_SIZE 128  // NOLINT(modernize-macro-to-enum)
 
-FILE* logFp = NULL;
+static FILE* logFp = NULL;
 
 typedef struct {
   const char* module;
@@ -31,7 +31,7 @@ typedef struct {
   void (*func)(const int, const char**);
 } ModuleStruct;
 
-void perftModule(int argc, const char** argv) {
+static void perftModule(int argc, const char** argv) {
   int depth = -1;
   bool bulk = false;
 
@@ -64,7 +64,7 @@ void perftModule(int argc, const char** argv) {
          result.captures, result.ep, result.castles, result.promotions, result.checks, result.checkmates);
 }
 
-void playModule(int argc, const char** argv) {
+static void playModule(int argc, const char** argv) {
   int white = 0;
   int black = 0;
 
@@ -97,8 +97,8 @@ void playModule(int argc, const char** argv) {
 
   Move move = 0;
   UndoMove undo;
-  bool userQuit = false;
-  while (!userQuit) {
+  int userQuit = 0;
+  while (userQuit == 0) {
     displayBoard(&board);
     if (board.turn == playerColor) {  // NOLINT(bugprone-branch-clone)
       move = engineBestMove(&board);

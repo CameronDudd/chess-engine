@@ -93,7 +93,7 @@ bool moveEP(Move move) {
   return FLAG(move) & MOVE_EP;
 }
 
-void initCastlingAvailability(void) {
+static void initCastlingAvailability(void) {
   for (PositionIndex i = 0; i < NUM_POSITIONS; ++i) castlingAvailabilityLookup[i] = NAP;
   castlingAvailabilityLookup[A1] = ~CASTLE_WHITE_QUEEN;
   castlingAvailabilityLookup[E1] = ~(CASTLE_WHITE_KING | CASTLE_WHITE_QUEEN);
@@ -131,7 +131,7 @@ void boardSetPiece(Board* board, PositionIndex position, Piece piece) {
   board->squares[position] = piece;
 }
 
-void boardRemovePiece(Board* board, const PositionIndex position, const Piece piece) {
+static void boardRemovePiece(Board* board, const PositionIndex position, const Piece piece) {
   if (piece == PIECE_NULL) return;
 
   BitBoard positionBit = POSITION_BIT(position);
@@ -275,31 +275,19 @@ void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAva
   board->castlingAvailability |= castlingAvailability;
 }
 
-BitBoard kingMoves(PositionIndex pos) {
-  return kingAttacks[pos];
-}
-
-BitBoard rookMoves(PositionIndex pos, BitBoard occupancy) {
+static BitBoard rookMoves(PositionIndex pos, BitBoard occupancy) {
   occupancy &= rookMasks[pos];
   uint64_t magic = (occupancy * RookMagics[pos]) >> (NUM_POSITIONS - rookNumBits[pos]);
   return rookAttacks[pos][magic];
 }
 
-BitBoard bishopMoves(PositionIndex pos, BitBoard occupancy) {
+static BitBoard bishopMoves(PositionIndex pos, BitBoard occupancy) {
   occupancy &= bishopMasks[pos];
   uint64_t magic = (occupancy * BishopMagics[pos]) >> (NUM_POSITIONS - bishopNumBits[pos]);
   return bishopAttacks[pos][magic];
 }
 
-BitBoard queenMoves(PositionIndex pos, BitBoard occupancy) {
-  return rookMoves(pos, occupancy) | bishopMoves(pos, occupancy);
-}
-
-BitBoard knightMoves(PositionIndex pos) {
-  return knightAttacks[pos];
-}
-
-BitBoard colorAttack(Board* board, Color side) {
+static BitBoard colorAttack(Board* board, Color side) {
   BitBoard attacks = (BitBoard)0;
 
   BitBoard occupancy = board->whites | board->blacks;
@@ -345,7 +333,7 @@ BitBoard colorAttack(Board* board, Color side) {
   return attacks;
 }
 
-bool colorAttacksSquare(Board* board, PositionIndex position, Color side) {
+static bool colorAttacksSquare(Board* board, PositionIndex position, Color side) {
   BitBoard occupancy       = board->whites | board->blacks;
   BitBoard* pieceBitboards = (side == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
   Color oppositeSide       = (side == WHITE) ? BLACK : WHITE;
@@ -359,14 +347,6 @@ bool colorAttacksSquare(Board* board, PositionIndex position, Color side) {
   return false;
 }
 
-bool colorAttacksBitboard(Board* board, BitBoard bitboard, Color side) {
-  while (bitboard) {
-    PositionIndex position = getLSB(&bitboard);
-    if (colorAttacksSquare(board, position, side)) return true;
-  }
-  return false;
-}
-
 bool kingInCheck(Board* board, Color side) {
   if (side == WHITE) {
     return colorAttacksSquare(board, __builtin_ctzll(board->whitePieceBoards[KING]), BLACK);
@@ -374,7 +354,7 @@ bool kingInCheck(Board* board, Color side) {
   return colorAttacksSquare(board, __builtin_ctzll(board->blackPieceBoards[KING]), WHITE);
 }
 
-void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(readability-function-cognitive-complexity)
+static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(readability-function-cognitive-complexity)
   BitBoard* pieceBitboards = (board->turn == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
   BitBoard friendlyPieces  = (board->turn == WHITE) ? board->whites : board->blacks;
   BitBoard enemyPieces     = (board->turn == WHITE) ? board->blacks : board->whites;

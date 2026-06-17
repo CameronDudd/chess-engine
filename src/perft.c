@@ -9,7 +9,7 @@
 
 #include "board.h"
 
-void addPerft(PerftResult* a, const PerftResult b) {
+static void addPerft(PerftResult* a, const PerftResult b) {
   a->nodes += b.nodes;
   a->captures += b.captures;
   a->ep += b.ep;
