@@ -21,7 +21,8 @@
 #define TARGET "chess-engine"
 #endif
 
-#define LOG_FILENAME_SIZE 128  // NOLINT(modernize-macro-to-enum)
+#define LOG_FILENAME_SIZE 128
+#define ENGINE_SEARCH_DEPTH 3
 
 static FILE* logFp = NULL;
 

@@ -12,6 +12,7 @@ Checks: >
   -misc-no-recursion,
   -readability-identifier-length,
   -readability-braces-around-statements,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -modernize-macro-to-enum
 
 WarningsAsErrors: '*'

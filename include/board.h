@@ -41,30 +41,31 @@ typedef enum {
 // https://www.chessprogramming.org/Encoding_Moves#MoveIndex
 // R6R/3Q4/1Q4Q1/4Q3/2Q4Q/Q4Q2/pp1Q4/kBNN1KB1 w - - 0 1
 // 3Q4/1Q4Q1/4Q3/2Q4R/Q4Q2/3Q4/1Q4Rp/1K1BBNNk w - - 0 1
-#define MAX_CHESS_MOVES 218  // NOLINT(modernize-macro-to-enum)
+#define MAX_CHESS_MOVES 218
 
 // 2 source
 // 2 destination
 // 1 Capture
 // 1 Check
 // 1 Null Termination
-#define MOVE_STRING_SIZE 7  // NOLINT(modernize-macro-to-enum)
+#define MOVE_STRING_SIZE 7
 
 // Field: [  FLAG   ][     DST     ][    SRC    ]
 // Bits:  [31 ... 12][11 10 9 8 7 6][5 4 3 2 1 0]
 typedef uint32_t Move;
 typedef uint16_t MoveFlag;
 
-#define MOVE_QUIET 0x0000             // NOLINT(modernize-macro-to-enum)
-#define MOVE_CAPTURE 0x0002           // NOLINT(modernize-macro-to-enum)
-#define MOVE_KING_CASTLE 0x0004       // NOLINT(modernize-macro-to-enum)
-#define MOVE_QUEEN_CASTLE 0x0008      // NOLINT(modernize-macro-to-enum)
-#define MOVE_ROOK_PROMOTION 0x0010    // NOLINT(modernize-macro-to-enum)
-#define MOVE_QUEEN_PROMOTION 0x0020   // NOLINT(modernize-macro-to-enum)
-#define MOVE_BISHOP_PROMOTION 0x0040  // NOLINT(modernize-macro-to-enum)
-#define MOVE_KNIGHT_PROMOTION 0x0080  // NOLINT(modernize-macro-to-enum)
-#define MOVE_EP 0x0100                // NOLINT(modernize-macro-to-enum)
-#define MOVE_DOUBLE_PUSH 0x0200       // NOLINT(modernize-macro-to-enum)
+#define MOVE_QUIET 0x0000
+#define MOVE_CAPTURE 0x0002
+#define MOVE_KING_CASTLE 0x0004
+#define MOVE_QUEEN_CASTLE 0x0008
+#define MOVE_ROOK_PROMOTION 0x0010
+#define MOVE_QUEEN_PROMOTION 0x0020
+#define MOVE_BISHOP_PROMOTION 0x0040
+#define MOVE_KNIGHT_PROMOTION 0x0080
+#define MOVE_EP 0x0100
+#define MOVE_DOUBLE_PUSH 0x0200
+#define MOVE_CHECKMATE 0x0400
 
 #define MOVE_PROMOTION 0x00F0
 

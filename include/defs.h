@@ -40,13 +40,13 @@
 #define BLACK_QUEEN_CASTLE_MASK (BitBoard)0x1C00000000000000
 #define BLACK_QUEEN_ROOK_CASTLE_MASK (BitBoard)0x0E00000000000000
 
-#define NUM_FILES 8  // NOLINT(modernize-macro-to-enum)
-#define NUM_RANKS 8  // NOLINT(modernize-macro-to-enum)
+#define NUM_FILES 8
+#define NUM_RANKS 8
 
-#define MAX_FILE 7  // NOLINT(modernize-macro-to-enum)
-#define MAX_RANK 7  // NOLINT(modernize-macro-to-enum)
+#define MAX_FILE 7
+#define MAX_RANK 7
 
-#define NUM_POSITIONS 64  // 8 rows x 8 cols  // NOLINT(modernize-macro-to-enum)
+#define NUM_POSITIONS 64  // 8 rows x 8 cols
 
 #define POS_INDEX(rank, file) (((rank) * 8) + (file))
 #define INDEX_RANK(index) ((index) / 8)

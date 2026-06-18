@@ -10,8 +10,8 @@
 
 #include "defs.h"
 
-#define ROOK_TABLE_MAX 4096   // NOLINT(modernize-macro-to-enum)
-#define BISHOP_TABLE_MAX 512  // NOLINT(modernize-macro-to-enum)
+#define ROOK_TABLE_MAX 4096
+#define BISHOP_TABLE_MAX 512
 
 extern const BitBoard RookMagics[NUM_POSITIONS];
 extern const BitBoard BishopMagics[NUM_POSITIONS];
