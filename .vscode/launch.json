@@ -7,7 +7,8 @@
       "request": "launch",
       "program": "main",
       "args": [
-        "play"
+        "play",
+        "-w"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
