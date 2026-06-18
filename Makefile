@@ -1,19 +1,20 @@
 CC = gcc
 
-MAJOR		:= 0
-MINOR		:= 0
-PATCH		:= 3
-PRE_RELEASE	:= alpha
-VERSION	:= v$(MAJOR).$(MINOR).$(PATCH)-$(PRE_RELEASE)
-
 BUILD 		?= debug
-TARGET_BASE 	:= main
-TARGET		:= $(TARGET_BASE)_$(VERSION)_$(BUILD)
-TEST_TARGET	:= test_$(VERSION)_$(BUILD)
 
 SRC_DIR		:= src
 BUILD_DIR	:= build/$(BUILD)
 INCLUDE_DIR	:= include
+
+MAJOR		:= 0
+MINOR		:= 0
+PATCH		:= 4
+PRE_RELEASE	:= -alpha
+VERSION		:= v$(MAJOR).$(MINOR).$(PATCH)$(PRE_RELEASE)
+
+TARGET_BASE 	:= main
+TARGET		:= $(BUILD_DIR)/$(TARGET_BASE)_$(VERSION)_$(BUILD)
+TEST_TARGET	:= $(BUILD_DIR)/test_$(VERSION)_$(BUILD)
 
 SRC		:= $(wildcard $(SRC_DIR)/*.c)
 
@@ -61,19 +62,16 @@ init:
 	git submodule update --init --recursive
 	$(MAKE) -C lib/argparse
 
-all: $(TARGET)
-
-perft: $(TARGET)
-	./$(TARGET) perft -h
-
-play: $(TARGET)
-	./$(TARGET) play -h
+all: $(TARGET) link
 
 tests: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 $(TARGET): $(OBJ) $(LOG_LIB_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+link: $(TARGET)
+	ln -sf $(TARGET) $(TARGET_BASE)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -97,7 +95,7 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf $(BUILD_DIR) $(TARGET_BASE)
 
 cloc:
 	cloc --md $(SRC_DIR) $(INCLUDE_DIR) $(TEST_DIR)
@@ -117,4 +115,4 @@ info:
 compile_commands.json: clean $(SRC) Makefile
 	@bear -- make $(TARGET)
 
-.PHONY: all init test perft clean cloc format check info compile_commands.json
+.PHONY: all link init test clean cloc format check info compile_commands.json
