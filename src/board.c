@@ -43,6 +43,12 @@ static char pieceChar(const Piece piece) {
   return pieceCharacterLookup[piece];
 }
 
+void displayMove(Move move) {
+  PositionIndex src = SRC(move);
+  PositionIndex dst = DST(move);
+  printf("%c%c -> %c%c\r\n", 'a' + INDEX_FILE(src), '1' + INDEX_RANK(src), 'a' + INDEX_FILE(dst), '1' + INDEX_RANK(dst));
+}
+
 void displayBoard(const Board* board) {
   printf("  %s\r\n", BORDER);
   for (int rank = MAX_RANK; rank >= 0; --rank) {

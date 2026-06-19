@@ -107,6 +107,7 @@ typedef struct {
 
 } Board;
 
+void displayMove(Move move);
 void displayBoard(const Board* board);
 void displayBitBoard(uint64_t bitboard);
 

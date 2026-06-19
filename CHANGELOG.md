@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Added move scoring and ordering
  - Added quiescentSearch
  - Added static position evaluation
+ - Added move display
 
 ### Changed
 
