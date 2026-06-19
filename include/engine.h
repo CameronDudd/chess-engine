@@ -8,6 +8,11 @@
 
 #include "board.h"
 
-Move engineBestMove(Board* board);
+typedef struct {
+  int score;
+  Move move;
+} ScoredMove;
+
+int search(Board* board, unsigned int depth, Move* bestMove, int alpha, int beta);
 
 #endif  // ENGINE_H

@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Added .vscode config
  - Added link Makefile target
  - .clang-tidy suppress modernize-macro-to-enum
+ - Added ScoredMove struct
+ - Added alpha-beta pruning to search
+ - Added piece value definitions
+ - Added move scoring and ordering
+ - Added quiescentSearch
+ - Added static position evaluation
+
+### Changed
+
+ - Renamed 'engineBestMove' to 'search'
 
 ## [0.0.3-alpha] - 2026-06-17
 
