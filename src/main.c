@@ -4,11 +4,15 @@
  */
 
 #include <argparse.h>
+#include <errno.h>
+#include <limits.h>
 #include <log.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 
 #include "board.h"
@@ -17,12 +21,14 @@
 #include "fen.h"
 #include "perft.h"
 
-#ifndef TARGET
-#define TARGET "chess-engine"
+#ifndef BASE_TARGET
+#define BASE_TARGET "chess-engine"
 #endif
 
 #define LOG_FILENAME_SIZE 128
-#define ENGINE_SEARCH_DEPTH 3
+#define FULL_LOG_FILENAME_SIZE 256
+#define ENGINE_SEARCH_DEPTH 4
+#define LOG_DIR_PERMS 0755
 
 static FILE* logFp = NULL;
 
@@ -44,7 +50,7 @@ static void perftModule(int argc, const char** argv) {
   };
 
   const char* const perftModuleUsages[] = {
-      TARGET " perft",
+      BASE_TARGET " perft",
       NULL,
   };
 
@@ -77,7 +83,7 @@ static void playModule(int argc, const char** argv) {
   };
 
   const char* const playModuleUsages[] = {
-      TARGET " play",
+      BASE_TARGET " play",
       NULL,
   };
 
@@ -96,17 +102,15 @@ static void playModule(int argc, const char** argv) {
   initBoard(&board);
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
 
-  Move move = 0;
+  Move bestMove = 0;
   UndoMove undo;
   int userQuit = 0;
   while (userQuit == 0) {
+    int searchResult = search(&board, ENGINE_SEARCH_DEPTH, &bestMove, INT_MIN, INT_MAX);
+    boardMakeMove(&board, bestMove, &undo);
     displayBoard(&board);
-    if (board.turn == playerColor) {  // NOLINT(bugprone-branch-clone)
-      move = engineBestMove(&board);
-    } else {
-      move = engineBestMove(&board);
-    }
-    boardMakeMove(&board, move, &undo);
+    printf("%i\r\n", searchResult);
+    displayMove(bestMove);
     userQuit = (getchar() == 'q') ? true : false;
   }
 }
@@ -117,7 +121,7 @@ static ModuleStruct modules[] = {
 };
 
 static void showUsage(void) {
-  printf(TARGET " <module> [options]\n\nModules:\n");
+  printf(BASE_TARGET " <module> [options]\n\nModules:\n");
   for (size_t i = 0; i < sizeof(modules) / sizeof(modules[0]); ++i) printf("  %s - %s\n", modules[i].module, modules[i].description);
 }
 
@@ -136,15 +140,40 @@ static void initLogging(void) {
   }
 
   char logFilename[LOG_FILENAME_SIZE];
-  if (!strftime(logFilename, sizeof(logFilename), "%d%m%Y_%H%M%S_" TARGET ".log", localTime)) {
+  if (!strftime(logFilename, sizeof(logFilename), "%d%m%Y_%H%M%S_" BASE_TARGET ".log", localTime)) {
     log_error("failed to format time string");
     return;
   }
-  logFp = fopen(logFilename, "w");
-  if (logFp == NULL) {
-    log_error("failed to open log file %s", logFilename);
+
+  const char* homeDir = getenv("HOME");  // NOLINT(concurrency-mt-unsafe)
+  if (homeDir == NULL) {
+    log_error("$HOME not defined.");
     return;
   }
+
+  char logDir[FULL_LOG_FILENAME_SIZE];
+  if (!snprintf(logDir, sizeof(logDir), "%s/.local/state/chess-engine/", homeDir)) {
+    log_error("failed to create logging directory path.");
+    return;
+  }
+
+  if (mkdir(logDir, LOG_DIR_PERMS) != 0 && errno != EEXIST) {
+    log_error("failed to create log dir");
+    return;
+  }
+
+  if (!strncat(logDir, logFilename, strlen(logFilename))) {
+    log_error("failed to concatenate logging filename onto logging directory");
+    return;
+  }
+
+  logFp = fopen(logDir, "w");
+  if (logFp == NULL) {
+    log_error("failed to open log file %s", logDir);
+    return;
+  }
+
+  log_info("successfully created logging directory %s", logDir);
 
 #ifdef DEBUG
   log_add_fp(logFp, LOG_TRACE);

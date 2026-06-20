@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
  - Renamed 'engineBestMove' to 'search'
+ - Moved logging to ~/.local/state/chess-engine/
 
 ## [0.0.3-alpha] - 2026-06-17
 
