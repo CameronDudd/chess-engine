@@ -18,16 +18,10 @@
 
 static CastlingAvailability castlingAvailabilityLookup[NUM_POSITIONS];
 
-static PositionIndex getLSB(BitBoard* bitboard) {
-  PositionIndex pos = __builtin_ctzll(*bitboard);
-  *bitboard &= *bitboard - 1;
-  return pos;
-}
-
 static void pushMoves(BitBoard enemyKing, BitBoard enemyPieces, PositionIndex src, BitBoard* moves, Move** movePtr) {
   enemyPieces &= ~enemyKing;
   while (*moves) {
-    PositionIndex dst = getLSB(moves);
+    PositionIndex dst = popLSB(moves);
     MoveFlag flag     = MOVE_QUIET;
     if (POSITION_BIT(dst) & enemyPieces) flag |= MOVE_CAPTURE;
     *(*movePtr)++ = MOVE(flag, dst, src);
@@ -302,37 +296,37 @@ static BitBoard colorAttack(Board* board, Color side) {
 
   BitBoard kings = pieceBitboards[KING];
   while (kings) {
-    PositionIndex pos = getLSB(&kings);
+    PositionIndex pos = popLSB(&kings);
     attacks |= kingAttacks[pos];
   }
 
   BitBoard queens = pieceBitboards[QUEEN];
   while (queens) {
-    PositionIndex pos = getLSB(&queens);
+    PositionIndex pos = popLSB(&queens);
     attacks |= rookMoves(pos, occupancy) | bishopMoves(pos, occupancy);
   }
 
   BitBoard rooks = pieceBitboards[ROOK];
   while (rooks) {
-    PositionIndex pos = getLSB(&rooks);
+    PositionIndex pos = popLSB(&rooks);
     attacks |= rookMoves(pos, occupancy);
   }
 
   BitBoard bishops = pieceBitboards[BISHOP];
   while (bishops) {
-    PositionIndex pos = getLSB(&bishops);
+    PositionIndex pos = popLSB(&bishops);
     attacks |= bishopMoves(pos, occupancy);
   }
 
   BitBoard knights = pieceBitboards[KNIGHT];
   while (knights) {
-    PositionIndex pos = getLSB(&knights);
+    PositionIndex pos = popLSB(&knights);
     attacks |= knightAttacks[pos];
   }
 
   BitBoard pawns = pieceBitboards[PAWN];
   while (pawns) {
-    PositionIndex pos = getLSB(&pawns);
+    PositionIndex pos = popLSB(&pawns);
     attacks |= pawnAttacks[side][pos];
   }
 
@@ -389,42 +383,42 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
 
   BitBoard kings = pieceBitboards[KING];
   while (kings) {
-    PositionIndex src     = getLSB(&kings);
+    PositionIndex src     = popLSB(&kings);
     BitBoard moveBitboard = kingAttacks[src] & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }
 
   BitBoard queens = pieceBitboards[QUEEN];
   while (queens) {
-    PositionIndex src     = getLSB(&queens);
+    PositionIndex src     = popLSB(&queens);
     BitBoard moveBitboard = (rookMoves(src, occupancy) | bishopMoves(src, occupancy)) & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }
 
   BitBoard rooks = pieceBitboards[ROOK];
   while (rooks) {
-    PositionIndex src     = getLSB(&rooks);
+    PositionIndex src     = popLSB(&rooks);
     BitBoard moveBitboard = rookMoves(src, occupancy) & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }
 
   BitBoard bishops = pieceBitboards[BISHOP];
   while (bishops) {
-    PositionIndex src     = getLSB(&bishops);
+    PositionIndex src     = popLSB(&bishops);
     BitBoard moveBitboard = bishopMoves(src, occupancy) & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }
 
   BitBoard knights = pieceBitboards[KNIGHT];
   while (knights) {
-    PositionIndex src     = getLSB(&knights);
+    PositionIndex src     = popLSB(&knights);
     BitBoard moveBitboard = knightAttacks[src] & ~friendlyPieces;
     pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
   }
 
   BitBoard pawns = pieceBitboards[PAWN];
   while (pawns) {
-    PositionIndex src = getLSB(&pawns);
+    PositionIndex src = popLSB(&pawns);
 
     BitBoard attacks = pawnAttacks[board->turn][src] & enemyPieces;
 
@@ -436,7 +430,7 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
     }
 
     while (attacks) {
-      PositionIndex dst = getLSB(&attacks);
+      PositionIndex dst = popLSB(&attacks);
       int rank          = INDEX_RANK(dst);
       if (dst == board->epSquare) {
         *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_EP, dst, src);
@@ -453,7 +447,7 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
     BitBoard moves = pawnSingleMoves[board->turn][src] & ~occupancy;
     moves |= moves ? pawnDoubleMoves[board->turn][src] & ~occupancy : (BitBoard)0;
     while (moves) {
-      PositionIndex dst = getLSB(&moves);
+      PositionIndex dst = popLSB(&moves);
       int rank          = INDEX_RANK(dst);
       if ((board->turn == WHITE && rank == MAX_RANK) || (board->turn == BLACK && rank == 0)) {
         *(*movePtr)++ = MOVE(MOVE_QUEEN_PROMOTION, dst, src);
@@ -476,15 +470,18 @@ unsigned int generateLegalMoves(Board* board, Move* moves) {
 
   Move* end  = movePtr;
   Move* wPtr = moves;
+
+  unsigned int numMoves = 0;
   for (Move* rPtr = pseudoLegalMoves; rPtr < end; ++rPtr) {
     Color movingSide = board->turn;
     UndoMove undo;
     boardMakeMove(board, *rPtr, &undo);
     if (!kingInCheck(board, movingSide)) {
-      *wPtr++ = *rPtr;
+      if (wPtr != NULL) *wPtr++ = *rPtr;
+      ++numMoves;
     }
     boardUnmakeMove(board, &undo);
   }
 
-  return wPtr - moves;
+  return numMoves;
 }

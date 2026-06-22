@@ -69,4 +69,10 @@ typedef enum {
   BLACK = 1,
 } Color;
 
+extern const BitBoard files[NUM_FILES];
+extern const BitBoard ranks[NUM_RANKS];
+
+PositionIndex popLSB(BitBoard* bitboard);
+PositionIndex getPopCount(BitBoard bitboard);
+
 #endif  // DEFS_H
