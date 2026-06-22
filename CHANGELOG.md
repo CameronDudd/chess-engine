@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Added quiescentSearch
  - Added static position evaluation
  - Added move display
+ - Added pawn penalties
 
 ### Changed
 
