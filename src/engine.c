@@ -6,6 +6,7 @@
 #include "engine.h"
 
 #include <limits.h>
+#include <log.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -22,34 +23,65 @@
 #define PAWN_PENALTY_MULTIPLIER 50
 #define MOBILITY_MULTIPLIER 10
 
-#define MATE 9999
-#define STALEMATE 0
-
 const int pieceValueLookup[NUM_PIECE_TYPES] = {KING_VALUE, QUEEN_VALUE, ROOK_VALUE, BISHOP_VALUE, KNIGHT_VALUE, PAWN_VALUE};
 
-static int countPieceValues(Board* board, Color color) {
-  BitBoard* pieces = (color == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
-  return (__builtin_popcountll(pieces[PAWN]) * PAWN_VALUE) + (__builtin_popcountll(pieces[KNIGHT]) * KNIGHT_VALUE) +
-         (__builtin_popcountll(pieces[BISHOP]) * BISHOP_VALUE) + (__builtin_popcountll(pieces[ROOK]) * ROOK_VALUE) +
-         (__builtin_popcountll(pieces[QUEEN]) * QUEEN_VALUE);
+static int countPieceValues(BitBoard* pieces) {
+  return (getPopCount(pieces[PAWN]) * PAWN_VALUE) + (getPopCount(pieces[KNIGHT]) * KNIGHT_VALUE) + (getPopCount(pieces[BISHOP]) * BISHOP_VALUE) +
+         (getPopCount(pieces[ROOK]) * ROOK_VALUE) + (getPopCount(pieces[QUEEN]) * QUEEN_VALUE);
 }
 
-static int countDoublePawns(Board* board, Color color) {
-  return 0;
+// TODO: Create pre-computed pawn lookahead table for all pawn counters
+// 1.
+static int countDoublePawns(BitBoard pawns) {
+  int sum          = 0;
+  BitBoard scanned = pawns;
+  while (scanned) {
+    PositionIndex pos = popLSB(&scanned);
+    int file          = INDEX_FILE(pos);
+    if (getPopCount(pawns & files[file]) > 1) sum += 1;
+  }
+  return sum;
 }
 
-static int countBlockedPawns(Board* board, Color color) {
-  return 0;
+// TODO: 2.
+static int countBlockedPawns(BitBoard pawns) {
+  int sum = 0;
+  for (unsigned int fileIdx = 0; fileIdx < NUM_FILES; ++fileIdx) {
+    int numPawns = getPopCount(pawns & files[fileIdx]);
+    if (numPawns > 1) sum += numPawns - 1;
+  }
+  return sum;
 }
 
-static int countIsolatedPawns(Board* board, Color color) {
-  return 0;
+// TODO: 3.
+static int countIsolatedPawns(BitBoard pawns) {
+  int sum = 0;
+  for (size_t fileIdx = 0; fileIdx < NUM_FILES; ++fileIdx) {
+    int filePawns = getPopCount(pawns & files[fileIdx]);
+
+    if (filePawns == 0) continue;
+
+    BitBoard neighborMask = (BitBoard)0;
+    if (fileIdx > 0) neighborMask |= files[fileIdx - 1];
+    if (fileIdx < MAX_FILE) neighborMask |= files[fileIdx + 1];
+
+    if (getPopCount(pawns & neighborMask) == 0) sum += filePawns;
+  }
+  return sum;
 }
 
 static int evaluate(Board* board, Color color, unsigned int numMoves) {
-  int pieceCountEvaluation = countPieceValues(board, color) - countPieceValues(board, !color);
-  int pawnEvaluation = countDoublePawns(board, color) - countDoublePawns(board, !color) + countBlockedPawns(board, color) - countBlockedPawns(board, !color) +
-                       countIsolatedPawns(board, color) - countIsolatedPawns(board, !color);
+  BitBoard* friendlyPieces = (color == WHITE) ? board->whitePieceBoards : board->blackPieceBoards;
+  BitBoard* enemyPieces    = (color == WHITE) ? board->blackPieceBoards : board->whitePieceBoards;
+
+  BitBoard friendlyPawns = friendlyPieces[PAWN];
+  BitBoard enemyPawns    = enemyPieces[PAWN];
+
+  int pieceCountEvaluation = countPieceValues(friendlyPieces) - countPieceValues(enemyPieces);
+
+  int pawnEvaluation = countDoublePawns(friendlyPawns) - countDoublePawns(enemyPawns) + countBlockedPawns(friendlyPawns) - countBlockedPawns(enemyPawns) +
+                       countIsolatedPawns(friendlyPawns) - countIsolatedPawns(enemyPawns);
+
   return pieceCountEvaluation - (PAWN_PENALTY_MULTIPLIER * pawnEvaluation) + (MOBILITY_MULTIPLIER * (int)numMoves);
 }
 
@@ -57,16 +89,19 @@ static int scoreMove(Board* board, Move move) {
   PositionIndex src = SRC(move);
   PositionIndex dst = DST(move);
   MoveFlag flag     = FLAG(move);
+  if (flag & MOVE_CHECKMATE) return -MATE;
   if (flag & MOVE_CAPTURE) return pieceValueLookup[board->squares[dst]] - pieceValueLookup[board->squares[src]];
   return 0;
 }
 
 static int compareMoves(const void* a, const void* b) {
-  if (a == NULL || b == NULL) return INT_MIN;
+  if (a == NULL || b == NULL) return -MATE;
   return ((ScoredMove*)b)->score - ((ScoredMove*)a)->score;
 }
 
-static int quiescentSearch(Board* board, int alpha, int beta) {
+static int quiescentSearch(Board* board, int alpha, int beta, SearchResult* searchResult) {
+  ++searchResult->qnodes;
+
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
   bool inCheck          = kingInCheck(board, board->turn);
@@ -99,7 +134,7 @@ static int quiescentSearch(Board* board, int alpha, int beta) {
 
     UndoMove undo;
     boardMakeMove(board, move, &undo);
-    int score = -quiescentSearch(board, -beta, -alpha);
+    int score = -quiescentSearch(board, -beta, -alpha, searchResult);
     boardUnmakeMove(board, &undo);
 
     if (score >= beta) return score;
@@ -109,15 +144,17 @@ static int quiescentSearch(Board* board, int alpha, int beta) {
   return alpha;
 }
 
-int search(Board* board, unsigned int depth, Move* bestMove, int alpha, int beta) {
+int search(Board* board, int ply, unsigned int depth, Move* bestMove, int alpha, int beta, SearchResult* searchResult) {
+  ++searchResult->nodes;
+
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
 
   if (numMoves == 0) {
-    return kingInCheck(board, board->turn) ? -MATE : STALEMATE;
+    return kingInCheck(board, board->turn) ? -MATE + ply : STALEMATE;
   };
 
-  if (depth == 0) return quiescentSearch(board, alpha, beta);
+  if (depth == 0) return quiescentSearch(board, alpha, beta, searchResult);
 
   ScoredMove scoredMoves[MAX_CHESS_MOVES];
   for (unsigned int i = 0; i < numMoves; ++i) {
@@ -128,29 +165,34 @@ int search(Board* board, unsigned int depth, Move* bestMove, int alpha, int beta
   }
   qsort(scoredMoves, numMoves, sizeof(ScoredMove), compareMoves);
 
-  int bestScore      = INT_MIN;
+  int localBestScore = -MATE;
   Move localBestMove = (Move)0;
 
   for (unsigned int i = 0; i < numMoves; ++i) {
     Move move = scoredMoves[i].move;
     UndoMove undo;
 
+    // Make the move and opponent evaluates new position
     boardMakeMove(board, move, &undo);
-    int score = -search(board, depth - 1, NULL, -beta, -alpha);
+    int score = -search(board, ply + 1, depth - 1, NULL, -beta, -alpha, searchResult);
     boardUnmakeMove(board, &undo);
 
-    if (score > bestScore) {
-      bestScore     = score;
-      localBestMove = move;
-      if (score > alpha) alpha = score;
+    if (score > localBestScore) {
+      localBestScore = score;
+      localBestMove  = move;
     }
-    if (score >= beta) {
-      if (bestMove != NULL) *bestMove = move;
-      return score;
-    };
+
+    // This branch found a move better than what the opponent will allow so no need to search further
+    if (score >= beta) break;  // Don't bother searching further
+
+    // Found a better move
+    if (score > alpha) alpha = score;
   }
 
-  if (bestMove != NULL) *bestMove = localBestMove;
+  if (ply == 0) {
+    if (bestMove != NULL) *bestMove = localBestMove;
+    searchResult->score = localBestScore;
+  }
 
-  return bestScore;
+  return localBestScore;
 }
