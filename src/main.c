@@ -20,6 +20,7 @@
 #include "engine.h"
 #include "fen.h"
 #include "perft.h"
+#include "player.h"
 
 #ifndef BASE_TARGET
 #define BASE_TARGET "chess-engine"
@@ -72,13 +73,15 @@ static void perftModule(int argc, const char** argv) {
 }
 
 static void playModule(int argc, const char** argv) {
-  int white = 0;
-  int black = 0;
+  int white    = 0;
+  int black    = 0;
+  int simulate = 0;
 
   struct argparse_option options[] = {
       OPT_HELP(),
       OPT_BOOLEAN('w', "white", &white, "play as white", NULL, 0, 0),
       OPT_BOOLEAN('b', "black", &black, "play as black", NULL, 0, 0),
+      OPT_BOOLEAN('s', "simulate", &simulate, "engine plays against itself", NULL, 0, 0),
       OPT_END(),
   };
 
@@ -102,16 +105,32 @@ static void playModule(int argc, const char** argv) {
   initBoard(&board);
   fenPopulateBoard(FEN_STARTING_POSITION, &board);
 
-  Move bestMove = 0;
+  Move move = (Move)0;
   UndoMove undo;
-  int userQuit = 0;
-  while (userQuit == 0) {
-    int searchResult = search(&board, ENGINE_SEARCH_DEPTH, &bestMove, INT_MIN, INT_MAX);
-    boardMakeMove(&board, bestMove, &undo);
+  Move legalMoves[MAX_CHESS_MOVES];
+  while (1) {
     displayBoard(&board);
-    printf("%i\r\n", searchResult);
-    displayMove(bestMove);
-    userQuit = (getchar() == 'q') ? true : false;
+
+    unsigned int numMoves = generateLegalMoves(&board, legalMoves);
+    if (numMoves == 0) {
+      printf("CHECKMATE\r\n");
+      break;
+    }
+
+    if ((simulate == 0) && (playerColor == board.turn)) {
+      bool legalMove = false;
+      while (!legalMove) {
+        if (!getPlayerMove(&move)) continue;
+        legalMove = getLegalMove(&move, legalMoves, numMoves);
+      }
+    } else {
+      SearchResult searchResult = {0};
+      search(&board, 0, ENGINE_SEARCH_DEPTH, &move, -MATE, MATE, &searchResult);
+      printf("Score: %i Nodes: %lu QNodes: %lu\r\n", searchResult.score, searchResult.nodes, searchResult.qnodes);
+    }
+
+    displayMove(move);
+    boardMakeMove(&board, move, &undo);
   }
 }
 

@@ -485,3 +485,14 @@ unsigned int generateLegalMoves(Board* board, Move* moves) {
 
   return numMoves;
 }
+
+bool getLegalMove(Move* move, const Move moves[MAX_CHESS_MOVES], unsigned int numMoves) {
+  for (unsigned int i = 0; i < numMoves; ++i) {
+    Move fullMove = moves[i];
+    if ((*move & MOVE_DST_SRC_MASK) == (fullMove & MOVE_DST_SRC_MASK)) {
+      *move = fullMove;
+      return true;
+    }
+  }
+  return false;
+}

@@ -71,6 +71,7 @@ typedef uint16_t MoveFlag;
 
 #define _6BIT_MASK 0x3F
 #define _4BIT_MASK 0x0F
+#define MOVE_DST_SRC_MASK 0x00000FFF
 
 #define SRC(move) (PositionIndex)((move) & _6BIT_MASK)
 #define DST(move) (PositionIndex)(((move) >> 6) & _6BIT_MASK)
@@ -125,5 +126,6 @@ void boardSetTurnColor(Board* board, Color turnColor);
 void boardSetCastlingAvailability(Board* board, CastlingAvailability castlingAvailability);
 bool kingInCheck(Board* board, Color side);
 unsigned int generateLegalMoves(Board* board, Move* moves);
+bool getLegalMove(Move* move, const Move moves[MAX_CHESS_MOVES], unsigned int numMoves);
 
 #endif  // BOARD_H
