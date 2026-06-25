@@ -13,7 +13,17 @@
 #include "defs.h"
 #include "magics.h"
 
+#define ESC "\x1b"
+#define COLOR_CLEAR ESC "[0m"
+
+// background;24-bit;r;g;b;execute
+#define _24_BIT_BLACK_PIECE ESC "[38;2;0;0;0m"
+#define _24_BIT_WHITE_PIECE ESC "[38;2;255;255;255m"
+#define _24_BIT_BLACK_SQUARE ESC "[48;2;153;76;0m"
+#define _24_BIT_WHITE_SQUARE ESC "[48;2;255;204;153m"
+
 #define BORDER "+---------------+"
+
 #define PIECE_WHITE(piece) ((PIECE_NULL < (piece)) && ((piece) <= WP))
 
 static CastlingAvailability castlingAvailabilityLookup[NUM_POSITIONS];
@@ -28,12 +38,10 @@ static void pushMoves(BitBoard enemyKing, BitBoard enemyPieces, PositionIndex sr
   }
 }
 
-#define BORDER "+---------------+"
+static const char* pieceCharacterLookup[PIECE_END] = {" ", "♚", "♛", "♜", "♝", "♞", "♟", "♚", "♛", "♜", "♝", "♞", "♟"};
 
-static const char pieceCharacterLookup[PIECE_END] = {' ', 'K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'};
-
-static char pieceChar(const Piece piece) {
-  if ((piece < 0) || (piece >= PIECE_END)) return '?';
+static const char* pieceStr(const Piece piece) {
+  if ((piece < 0) || (piece >= PIECE_END)) return "?";
   return pieceCharacterLookup[piece];
 }
 
@@ -44,16 +52,16 @@ void displayMove(Move move) {
 }
 
 void displayBoard(const Board* board) {
-  printf("  %s\r\n", BORDER);
   for (int rank = MAX_RANK; rank >= 0; --rank) {
-    printf("%c ", '1' + rank);
+    printf("\r\n%c ", '1' + rank);
     for (int file = 0; file < NUM_FILES; ++file) {
       PositionIndex i = POS_INDEX(rank, file);
-      printf("|%c", pieceChar(board->squares[i]));
+      const char* fg  = PIECE_WHITE(board->squares[i]) ? _24_BIT_WHITE_PIECE : _24_BIT_BLACK_PIECE;
+      const char* bg  = ((rank + file) % 2) ? _24_BIT_WHITE_SQUARE : _24_BIT_BLACK_SQUARE;
+      printf("%s%s%s %s", fg, bg, pieceStr(board->squares[i]), COLOR_CLEAR);
     }
-    printf("|\r\n");
   }
-  printf("  %s\r\n   ", BORDER);
+  printf("\r\n  ");
   for (int file = 0; file < NUM_FILES; ++file) {
     printf("%c ", 'a' + file);
   }
