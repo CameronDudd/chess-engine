@@ -7,3 +7,5 @@ main_v*_debug
 main_v*_release
 test_v*_debug
 test_v*_release
+
+*.ignore/
