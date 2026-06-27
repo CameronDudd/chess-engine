@@ -101,9 +101,9 @@ static int evaluate(Board* board, Color color, unsigned int numMoves) {
 static int scoreMove(Board* board, Move move) {
   PositionIndex src = SRC(move);
   PositionIndex dst = DST(move);
-  MoveFlag flag     = FLAG(move);
-  if (flag & MOVE_CHECKMATE) return -MATE;
-  if (flag & MOVE_CAPTURE) return pieceValueLookup[board->squares[dst]] - pieceValueLookup[board->squares[src]];
+  Piece attacker    = board->squares[src];
+  Piece defender    = board->squares[dst];
+  if (moveCapture(board, move)) return pieceValueLookup[defender] - pieceValueLookup[attacker];
   return 0;
 }
 
@@ -140,9 +140,7 @@ static int quiescentSearch(Board* board, int alpha, int beta) {
 
   for (unsigned int i = 0; i < numMoves; ++i) {
     Move move = scoredMoves[i].move;
-
-    if (!inCheck && ((FLAG(move) & MOVE_CAPTURE) == 0)) continue;
-
+    if (!inCheck && !moveCapture(board, move)) continue;
     UndoMove undo;
     boardMakeMove(board, move, &undo);
     int score = -quiescentSearch(board, -beta, -alpha);
