@@ -62,7 +62,7 @@ static BitBoard xorshift64() {
   return seed;
 }
 
-static BitBoard sparsexorshift64(void) {
+BitBoard sparsexorshift64(void) {
   return xorshift64() & xorshift64() & xorshift64();  // NOLINT(misc-redundant-expression)
 }
 

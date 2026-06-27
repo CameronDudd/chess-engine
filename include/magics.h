@@ -30,6 +30,8 @@ extern BitBoard pawnAttacks[2][NUM_POSITIONS];
 extern BitBoard pawnSingleMoves[2][NUM_POSITIONS];
 extern BitBoard pawnDoubleMoves[2][NUM_POSITIONS];
 
+BitBoard sparsexorshift64(void);
+
 BitBoard occupancyMask(int index, BitBoard mask);
 
 BitBoard rookMask(int rank, int file);
