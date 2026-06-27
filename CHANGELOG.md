@@ -21,12 +21,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Added static position evaluation
  - Added move display
  - Added pawn penalties
+ - Added iterativeSearch
 
 ### Changed
 
  - Renamed 'engineBestMove' to 'search'
  - Moved logging to ~/.local/state/chess-engine/
- - Changed pieceCharacterLookup to use better utf8 chess pieces
+ - Changed pieceCharacterLookup to use utf8 chess pieces
  - Changed displayBoard to use escape sequences for colouring
 
 ## [0.0.3-alpha] - 2026-06-17

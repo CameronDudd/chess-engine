@@ -3,12 +3,16 @@
  *   All rights reserved.
  */
 
+#define _POSIX_C_SOURCE 199309L  // Required for clock_getttime
+
 #include "engine.h"
 
 #include <limits.h>
 #include <log.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "board.h"
 #include "defs.h"
@@ -23,7 +27,16 @@
 #define PAWN_PENALTY_MULTIPLIER 50
 #define MOBILITY_MULTIPLIER 10
 
+#define S_TO_NS 100000000ULL
+#define MS_TO_NS 100000ULL
+
 const int pieceValueLookup[NUM_PIECE_TYPES] = {KING_VALUE, QUEEN_VALUE, ROOK_VALUE, BISHOP_VALUE, KNIGHT_VALUE, PAWN_VALUE};
+
+static uint64_t monoTimeNs(void) {
+  struct timespec tp;
+  clock_gettime(CLOCK_MONOTONIC, &tp);
+  return (uint64_t)((tp.tv_sec * S_TO_NS) + tp.tv_nsec);
+}
 
 static int countPieceValues(BitBoard* pieces) {
   return (getPopCount(pieces[PAWN]) * PAWN_VALUE) + (getPopCount(pieces[KNIGHT]) * KNIGHT_VALUE) + (getPopCount(pieces[BISHOP]) * BISHOP_VALUE) +
@@ -99,9 +112,7 @@ static int compareMoves(const void* a, const void* b) {
   return ((ScoredMove*)b)->score - ((ScoredMove*)a)->score;
 }
 
-static int quiescentSearch(Board* board, int alpha, int beta, SearchResult* searchResult) {
-  ++searchResult->qnodes;
-
+static int quiescentSearch(Board* board, int alpha, int beta) {
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
   bool inCheck          = kingInCheck(board, board->turn);
@@ -134,7 +145,7 @@ static int quiescentSearch(Board* board, int alpha, int beta, SearchResult* sear
 
     UndoMove undo;
     boardMakeMove(board, move, &undo);
-    int score = -quiescentSearch(board, -beta, -alpha, searchResult);
+    int score = -quiescentSearch(board, -beta, -alpha);
     boardUnmakeMove(board, &undo);
 
     if (score >= beta) return score;
@@ -144,8 +155,12 @@ static int quiescentSearch(Board* board, int alpha, int beta, SearchResult* sear
   return alpha;
 }
 
-int search(Board* board, int ply, unsigned int depth, Move* bestMove, int alpha, int beta, SearchResult* searchResult) {
-  ++searchResult->nodes;
+int search(Board* board, int ply, unsigned int depth, int alpha, int beta, Move* bestMove, SearchTimer* searchTimer) {
+  // TODO: Don't check timeout every call
+  if (monoTimeNs() >= searchTimer->endTimeNs) {
+    searchTimer->searchInterrupted = true;
+    return -MATE;
+  }
 
   Move moves[MAX_CHESS_MOVES];
   unsigned int numMoves = generateLegalMoves(board, moves);
@@ -154,7 +169,7 @@ int search(Board* board, int ply, unsigned int depth, Move* bestMove, int alpha,
     return kingInCheck(board, board->turn) ? -MATE + ply : STALEMATE;
   };
 
-  if (depth == 0) return quiescentSearch(board, alpha, beta, searchResult);
+  if (depth == 0) return quiescentSearch(board, alpha, beta);
 
   ScoredMove scoredMoves[MAX_CHESS_MOVES];
   for (unsigned int i = 0; i < numMoves; ++i) {
@@ -174,8 +189,10 @@ int search(Board* board, int ply, unsigned int depth, Move* bestMove, int alpha,
 
     // Make the move and opponent evaluates new position
     boardMakeMove(board, move, &undo);
-    int score = -search(board, ply + 1, depth - 1, NULL, -beta, -alpha, searchResult);
+    int score = -search(board, ply + 1, depth - 1, -beta, -alpha, NULL, searchTimer);
     boardUnmakeMove(board, &undo);
+
+    if (searchTimer->searchInterrupted) break;
 
     if (score > localBestScore) {
       localBestScore = score;
@@ -191,8 +208,28 @@ int search(Board* board, int ply, unsigned int depth, Move* bestMove, int alpha,
 
   if (ply == 0) {
     if (bestMove != NULL) *bestMove = localBestMove;
-    searchResult->score = localBestScore;
   }
 
   return localBestScore;
+}
+
+SearchResult iterativeSearch(Board* board, unsigned int depthLimit, unsigned int timeLimitMs) {
+  SearchTimer searchTimer = {
+      .endTimeNs         = monoTimeNs() + (timeLimitMs * MS_TO_NS),
+      .searchInterrupted = false,
+  };
+
+  SearchResult searchResult;
+
+  int iterBestScore = 0;
+  Move iterBestMove = (Move)0;
+  for (unsigned int depth = 1; depth <= depthLimit; ++depth) {
+    if (monoTimeNs() >= searchTimer.endTimeNs) break;
+    iterBestScore = search(board, 0, depth, -MATE, MATE, &iterBestMove, &searchTimer);
+    if (searchTimer.searchInterrupted) break;
+    searchResult.move  = iterBestMove;
+    searchResult.score = iterBestScore;
+  }
+
+  return searchResult;
 }

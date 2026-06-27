@@ -28,8 +28,10 @@
 
 #define LOG_FILENAME_SIZE 128
 #define FULL_LOG_FILENAME_SIZE 256
-#define ENGINE_SEARCH_DEPTH 4
 #define LOG_DIR_PERMS 0755
+
+#define ENGINE_SEARCH_DEPTH_LIMIT 1
+#define ENGINE_SEARCH_TIME_LIMIT_MS 500
 
 static FILE* logFp = NULL;
 
@@ -124,9 +126,8 @@ static void playModule(int argc, const char** argv) {
         legalMove = getLegalMove(&move, legalMoves, numMoves);
       }
     } else {
-      SearchResult searchResult = {0};
-      search(&board, 0, ENGINE_SEARCH_DEPTH, &move, -MATE, MATE, &searchResult);
-      printf("Score: %i Nodes: %lu QNodes: %lu\r\n", searchResult.score, searchResult.nodes, searchResult.qnodes);
+      SearchResult searchResult = iterativeSearch(&board, ENGINE_SEARCH_DEPTH_LIMIT, ENGINE_SEARCH_TIME_LIMIT_MS);
+      move                      = searchResult.move;
     }
 
     displayMove(move);
