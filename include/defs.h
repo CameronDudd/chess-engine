@@ -65,8 +65,9 @@ typedef uint64_t BitBoard;
 #define H8 (PositionIndex)63
 
 typedef enum {
-  WHITE = 0,
-  BLACK = 1,
+  WHITE      = 0,
+  BLACK      = 1,
+  NUM_COLORS = 2,
 } Color;
 
 extern const BitBoard files[NUM_FILES];
