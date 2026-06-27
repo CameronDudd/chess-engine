@@ -50,33 +50,36 @@ typedef enum {
 // 1 Null Termination
 #define MOVE_STRING_SIZE 7
 
-// Field: [  FLAG   ][     DST     ][    SRC    ]
-// Bits:  [31 ... 12][11 10 9 8 7 6][5 4 3 2 1 0]
-typedef uint32_t Move;
-typedef uint16_t MoveFlag;
+// Field: [ META  ][ FLAG  ][     DST     ][    SRC    ]
+// Bits:  [ 15 14 ][ 13 12 ][11 10 9 8 7 6][5 4 3 2 1 0]
+typedef uint16_t Move;
+typedef uint8_t MoveFlag;
+typedef uint8_t MoveMeta;
 
-#define MOVE_QUIET 0x0000
-#define MOVE_CAPTURE 0x0002
-#define MOVE_KING_CASTLE 0x0004
-#define MOVE_QUEEN_CASTLE 0x0008
-#define MOVE_ROOK_PROMOTION 0x0010
-#define MOVE_QUEEN_PROMOTION 0x0020
-#define MOVE_BISHOP_PROMOTION 0x0040
-#define MOVE_KNIGHT_PROMOTION 0x0080
-#define MOVE_EP 0x0100
-#define MOVE_DOUBLE_PUSH 0x0200
-#define MOVE_CHECKMATE 0x0400
+#define MOVE_FLAG_QUIET (MoveFlag)0
+#define MOVE_FLAG_EP (MoveFlag)1
+#define MOVE_FLAG_CASTLE (MoveFlag)2
+#define MOVE_FLAG_PROMOTION (MoveFlag)3
 
-#define MOVE_PROMOTION 0x00F0
+#define MOVE_META_QUIET (MoveMeta)0
 
+#define MOVE_META_PROMOTION_KNIGHT (MoveMeta)0
+#define MOVE_META_PROMOTION_BISHOP (MoveMeta)1
+#define MOVE_META_PROMOTION_ROOK (MoveMeta)2
+#define MOVE_META_PROMOTION_QUEEN (MoveMeta)3
+
+#define MOVE_META_CASTLE_KINGSIDE (MoveMeta)0
+#define MOVE_META_CASTLE_QUEENSIDE (MoveMeta)1
+
+#define _2BIT_MASK 0x3
 #define _6BIT_MASK 0x3F
-#define _4BIT_MASK 0x0F
 #define MOVE_DST_SRC_MASK 0x00000FFF
 
 #define SRC(move) (PositionIndex)((move) & _6BIT_MASK)
 #define DST(move) (PositionIndex)(((move) >> 6) & _6BIT_MASK)
-#define FLAG(move) (MoveFlag)((move) >> 12)
-#define MOVE(flag, dst, src) (Move)(((flag) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
+#define FLAG(move) (MoveFlag)(((move) >> 12) & _2BIT_MASK)
+#define META(move) (MoveMeta)(((move) >> 14) & _2BIT_MASK)
+#define MOVE(meta, flag, dst, src) (Move)((((meta) & _2BIT_MASK) << 14) | (((flag) & _2BIT_MASK) << 12) | (((dst) & _6BIT_MASK) << 6) | ((src) & _6BIT_MASK))
 
 typedef uint8_t CastlingAvailability;
 #define CASTLE_WHITE_KING (CastlingAvailability)0x1
@@ -113,7 +116,7 @@ void displayBoard(const Board* board);
 void displayBitBoard(uint64_t bitboard);
 
 bool moveCastle(Move move);
-bool moveCapture(Move move);
+bool moveCapture(Board* board, Move move);
 bool movePromotion(Move move);
 bool moveEP(Move move);
 

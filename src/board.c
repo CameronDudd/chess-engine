@@ -6,6 +6,7 @@
 #include "board.h"
 
 #include <log.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,9 +33,7 @@ static void pushMoves(BitBoard enemyKing, BitBoard enemyPieces, PositionIndex sr
   enemyPieces &= ~enemyKing;
   while (*moves) {
     PositionIndex dst = popLSB(moves);
-    MoveFlag flag     = MOVE_QUIET;
-    if (POSITION_BIT(dst) & enemyPieces) flag |= MOVE_CAPTURE;
-    *(*movePtr)++ = MOVE(flag, dst, src);
+    *(*movePtr)++     = MOVE(MOVE_META_QUIET, MOVE_FLAG_QUIET, dst, src);
   }
 }
 
@@ -86,19 +85,21 @@ void displayBitBoard(BitBoard board) {
 }
 
 bool moveCastle(Move move) {
-  return FLAG(move) & (MOVE_KING_CASTLE | MOVE_QUEEN_CASTLE);
+  return FLAG(move) == MOVE_FLAG_CASTLE;
 }
 
-bool moveCapture(Move move) {
-  return FLAG(move) & MOVE_CAPTURE;
+bool moveCapture(Board* board, Move move) {
+  PositionIndex dst = DST(move);
+  MoveFlag flag     = FLAG(move);
+  return ((flag == MOVE_FLAG_EP) || (board->squares[dst] != PIECE_NULL));
 }
 
 bool movePromotion(Move move) {
-  return FLAG(move) & (MOVE_QUEEN_PROMOTION | MOVE_ROOK_PROMOTION | MOVE_BISHOP_PROMOTION | MOVE_KNIGHT_PROMOTION);
+  return FLAG(move) == MOVE_FLAG_PROMOTION;
 }
 
 bool moveEP(Move move) {
-  return FLAG(move) & MOVE_EP;
+  return (FLAG(move) == MOVE_FLAG_EP);
 }
 
 static void initCastlingAvailability(void) {
@@ -163,6 +164,7 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
   PositionIndex src = SRC(move);
   PositionIndex dst = DST(move);
   MoveFlag flag     = FLAG(move);
+  MoveMeta meta     = META(move);
 
   Piece piece  = board->squares[src];
   Piece target = board->squares[dst];
@@ -183,36 +185,29 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
   board->castlingAvailability &= castlingAvailabilityLookup[src];
   board->castlingAvailability &= castlingAvailabilityLookup[dst];
 
-  if (piece == WK || piece == BK) {
-    if (flag & MOVE_KING_CASTLE) {
-      Piece rook = (board->turn == WHITE) ? WR : BR;
+  if ((piece == WK || piece == BK) && (flag == MOVE_FLAG_CASTLE)) {
+    Piece rook = (board->turn == WHITE) ? WR : BR;
+    if (meta == MOVE_META_CASTLE_KINGSIDE) {
       boardRemovePiece(board, dst + 1, rook);
       boardSetPiece(board, src + 1, rook);
-    } else if (flag & MOVE_QUEEN_CASTLE) {
-      Piece rook = (board->turn == WHITE) ? WR : BR;
+    } else if (meta == MOVE_META_CASTLE_QUEENSIDE) {
       boardRemovePiece(board, dst - 2, rook);
       boardSetPiece(board, dst + 1, rook);
     }
   }
 
   if (piece == WP || piece == BP) {
-    if (flag & MOVE_EP) {
+    if (abs(dst - src) == (NUM_FILES * 2)) board->epSquare = (src + dst) / 2;
+    if (flag == MOVE_FLAG_EP) {
       undo->epCapturedSquare = (board->turn == WHITE) ? dst - NUM_FILES : dst + NUM_FILES;
       boardRemovePiece(board, undo->epCapturedSquare, (board->turn == WHITE) ? BP : WP);
-    } else if (flag & MOVE_DOUBLE_PUSH) {
-      board->epSquare = (src + dst) / 2;
-    } else if (flag & MOVE_QUEEN_PROMOTION) {
+    }
+    if (flag == MOVE_FLAG_PROMOTION) {
       boardRemovePiece(board, dst, piece);
-      boardSetPiece(board, dst, (board->turn == WHITE) ? WQ : BQ);
-    } else if (flag & MOVE_ROOK_PROMOTION) {
-      boardRemovePiece(board, dst, piece);
-      boardSetPiece(board, dst, (board->turn == WHITE) ? WR : BR);
-    } else if (flag & MOVE_BISHOP_PROMOTION) {
-      boardRemovePiece(board, dst, piece);
-      boardSetPiece(board, dst, (board->turn == WHITE) ? WB : BB);
-    } else if (flag & MOVE_KNIGHT_PROMOTION) {
-      boardRemovePiece(board, dst, piece);
-      boardSetPiece(board, dst, (board->turn == WHITE) ? WN : BN);
+      if (meta == MOVE_META_PROMOTION_QUEEN) boardSetPiece(board, dst, (board->turn == WHITE) ? WQ : BQ);
+      if (meta == MOVE_META_PROMOTION_ROOK) boardSetPiece(board, dst, (board->turn == WHITE) ? WR : BR);
+      if (meta == MOVE_META_PROMOTION_BISHOP) boardSetPiece(board, dst, (board->turn == WHITE) ? WB : BB);
+      if (meta == MOVE_META_PROMOTION_KNIGHT) boardSetPiece(board, dst, (board->turn == WHITE) ? WN : BN);
     }
   }
 
@@ -225,12 +220,13 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
   PositionIndex src = SRC(move);
   PositionIndex dst = DST(move);
   MoveFlag flag     = FLAG(move);
+  MoveMeta meta     = META(move);
 
   Piece piece = board->squares[dst];
 
   boardRemovePiece(board, dst, piece);
 
-  if (flag & MOVE_PROMOTION) {
+  if (flag == MOVE_FLAG_PROMOTION) {
     piece = (board->turn == WHITE) ? BP : WP;
   }
 
@@ -241,15 +237,16 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
 
   if (undo->captured != PIECE_NULL) boardSetPiece(board, dst, undo->captured);
 
-  if (flag & MOVE_KING_CASTLE) {
+  if (flag == MOVE_FLAG_CASTLE) {
     Piece rook = (board->turn == WHITE) ? BR : WR;
-    boardRemovePiece(board, src + 1, rook);
-    boardSetPiece(board, dst + 1, rook);
-  } else if (flag & MOVE_QUEEN_CASTLE) {
-    Piece rook = (board->turn == WHITE) ? BR : WR;
-    boardRemovePiece(board, dst + 1, rook);
-    boardSetPiece(board, dst - 2, rook);
-  } else if (flag & MOVE_EP) {
+    if (meta == MOVE_META_CASTLE_KINGSIDE) {
+      boardRemovePiece(board, src + 1, rook);
+      boardSetPiece(board, dst + 1, rook);
+    } else if (meta == MOVE_META_CASTLE_QUEENSIDE) {
+      boardRemovePiece(board, dst + 1, rook);
+      boardSetPiece(board, dst - 2, rook);
+    }
+  } else if (flag == MOVE_FLAG_EP) {
     boardSetPiece(board, undo->epCapturedSquare, board->turn == WHITE ? WP : BP);
   }
 
@@ -367,7 +364,6 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
   BitBoard friendlyPieces  = (board->turn == WHITE) ? board->whites : board->blacks;
   BitBoard enemyPieces     = (board->turn == WHITE) ? board->blacks : board->whites;
   BitBoard occupancy       = board->whites | board->blacks;
-  BitBoard enemyKing       = (board->turn == WHITE) ? board->blackPieceBoards[KING] : board->whitePieceBoards[KING];
   BitBoard enemyAttacks    = colorAttack(board, board->turn == WHITE ? BLACK : WHITE);
 
   CastlingAvailability kingCastleAvailable =
@@ -382,46 +378,46 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
 
   if (kingCastleAvailable && ((kingCastleMask & enemyAttacks) == 0) && ((kingRookCastleMask & occupancy) == 0)) {
     PositionIndex src = __builtin_ctzll(pieceBitboards[KING]);
-    *(*movePtr)++     = MOVE(MOVE_KING_CASTLE, src + 2, src);
+    *(*movePtr)++     = MOVE(MOVE_META_CASTLE_KINGSIDE, MOVE_FLAG_CASTLE, src + 2, src);
   }
   if (queenCastleAvailable && ((queenCastleMask & enemyAttacks) == 0) && ((queenRookCastleMask & occupancy) == 0)) {
     PositionIndex src = __builtin_ctzll(pieceBitboards[KING]);
-    *(*movePtr)++     = MOVE(MOVE_QUEEN_CASTLE, src - 2, src);
+    *(*movePtr)++     = MOVE(MOVE_META_CASTLE_QUEENSIDE, MOVE_FLAG_CASTLE, src - 2, src);
   }
 
   BitBoard kings = pieceBitboards[KING];
   while (kings) {
     PositionIndex src     = popLSB(&kings);
     BitBoard moveBitboard = kingAttacks[src] & ~friendlyPieces;
-    pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
+    pushMoves(src, &moveBitboard, movePtr);
   }
 
   BitBoard queens = pieceBitboards[QUEEN];
   while (queens) {
     PositionIndex src     = popLSB(&queens);
     BitBoard moveBitboard = (rookMoves(src, occupancy) | bishopMoves(src, occupancy)) & ~friendlyPieces;
-    pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
+    pushMoves(src, &moveBitboard, movePtr);
   }
 
   BitBoard rooks = pieceBitboards[ROOK];
   while (rooks) {
     PositionIndex src     = popLSB(&rooks);
     BitBoard moveBitboard = rookMoves(src, occupancy) & ~friendlyPieces;
-    pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
+    pushMoves(src, &moveBitboard, movePtr);
   }
 
   BitBoard bishops = pieceBitboards[BISHOP];
   while (bishops) {
     PositionIndex src     = popLSB(&bishops);
     BitBoard moveBitboard = bishopMoves(src, occupancy) & ~friendlyPieces;
-    pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
+    pushMoves(src, &moveBitboard, movePtr);
   }
 
   BitBoard knights = pieceBitboards[KNIGHT];
   while (knights) {
     PositionIndex src     = popLSB(&knights);
     BitBoard moveBitboard = knightAttacks[src] & ~friendlyPieces;
-    pushMoves(enemyKing, enemyPieces, src, &moveBitboard, movePtr);
+    pushMoves(src, &moveBitboard, movePtr);
   }
 
   BitBoard pawns = pieceBitboards[PAWN];
@@ -441,14 +437,14 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
       PositionIndex dst = popLSB(&attacks);
       int rank          = INDEX_RANK(dst);
       if (dst == board->epSquare) {
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_EP, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_QUIET, MOVE_FLAG_EP, dst, src);
       } else if ((board->turn == WHITE && rank == MAX_RANK) || (board->turn == BLACK && rank == 0)) {
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_QUEEN_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_ROOK_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_BISHOP_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE | MOVE_KNIGHT_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_QUEEN, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_ROOK, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_BISHOP, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_KNIGHT, MOVE_FLAG_PROMOTION, dst, src);
       } else {
-        *(*movePtr)++ = MOVE(MOVE_CAPTURE, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_QUIET, MOVE_FLAG_QUIET, dst, src);
       }
     }
 
@@ -458,14 +454,12 @@ static void generatePseudoLegalMoves(Board* board, Move** movePtr) {  // NOLINT(
       PositionIndex dst = popLSB(&moves);
       int rank          = INDEX_RANK(dst);
       if ((board->turn == WHITE && rank == MAX_RANK) || (board->turn == BLACK && rank == 0)) {
-        *(*movePtr)++ = MOVE(MOVE_QUEEN_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_ROOK_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_BISHOP_PROMOTION, dst, src);
-        *(*movePtr)++ = MOVE(MOVE_KNIGHT_PROMOTION, dst, src);
-      } else if (abs(dst - src) == (NUM_FILES * 2)) {
-        *(*movePtr)++ = MOVE(MOVE_DOUBLE_PUSH, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_QUEEN, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_ROOK, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_BISHOP, MOVE_FLAG_PROMOTION, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_PROMOTION_KNIGHT, MOVE_FLAG_PROMOTION, dst, src);
       } else {
-        *(*movePtr)++ = MOVE(MOVE_QUIET, dst, src);
+        *(*movePtr)++ = MOVE(MOVE_META_QUIET, MOVE_FLAG_QUIET, dst, src);
       }
     }
   }
