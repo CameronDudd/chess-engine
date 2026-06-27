@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include "board.h"
 #include "log.h"
 
 #define MAX_PLAYER_MOVE_STR 6  // 'a2a4\n\0'
@@ -17,7 +18,7 @@ static bool decodePlayerMoveStr(const char playerMove[MAX_PLAYER_MOVE_STR], Move
   char dstFile = playerMove[2];
   char dstRow  = playerMove[3];
   if (('a' <= srcFile && srcFile <= 'h') && ('1' <= srcRow && srcRow <= '8') && ('a' <= dstFile && dstFile <= 'h') && ('1' <= dstRow && dstRow <= '8')) {
-    *move = MOVE(0, (dstRow - '1') * 8 + (dstFile - 'a'), (srcRow - '1') * 8 + (srcFile - 'a'));
+    *move = MOVE(MOVE_META_QUIET, MOVE_FLAG_QUIET, (dstRow - '1') * 8 + (dstFile - 'a'), (srcRow - '1') * 8 + (srcFile - 'a'));
     return true;
   }
   return false;

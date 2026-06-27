@@ -38,7 +38,7 @@ PerftResult perft(Board* board, int depth, bool bulk) {  // NOLINT(readability-f
     for (unsigned int i = 0; i < numMoves; ++i) {
       Move move = moves[i];
       if (moveCastle(move)) result.castles += 1;
-      if (moveCapture(move)) result.captures += 1;
+      if (moveCapture(board, move)) result.captures += 1;
       if (movePromotion(move)) result.promotions += 1;
       if (moveEP(move)) result.ep += 1;
 
