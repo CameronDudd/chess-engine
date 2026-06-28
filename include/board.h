@@ -86,6 +86,9 @@ typedef uint8_t CastlingAvailability;
 #define CASTLE_WHITE_QUEEN (CastlingAvailability)0x2
 #define CASTLE_BLACK_KING (CastlingAvailability)0x4
 #define CASTLE_BLACK_QUEEN (CastlingAvailability)0x8
+#define CAN_CASTLE_MAX_NUM 16
+
+typedef uint64_t ZobristHash;
 
 typedef struct {
   Move move;
@@ -93,6 +96,7 @@ typedef struct {
   CastlingAvailability castlingAvailability;
   PositionIndex epSquare;
   PositionIndex epCapturedSquare;
+  ZobristHash zobrist;
 } UndoMove;
 
 typedef struct {
@@ -109,6 +113,7 @@ typedef struct {
   BitBoard whitePieceBoards[NUM_PIECE_TYPES];
   BitBoard blackPieceBoards[NUM_PIECE_TYPES];
 
+  ZobristHash zobrist;
 } Board;
 
 void displayMove(Move move);
@@ -121,8 +126,8 @@ bool movePromotion(Move move);
 bool moveEP(Move move);
 
 void initBoard(Board* board);
+void initBoardZobrist(Board* board);
 void boardSetPiece(Board* board, PositionIndex position, Piece piece);
-Piece boardGetPiece(const Board* board, PositionIndex position);
 void boardMakeMove(Board* board, Move move, UndoMove* undo);
 void boardUnmakeMove(Board* board, const UndoMove* undo);
 void boardSetTurnColor(Board* board, Color turnColor);

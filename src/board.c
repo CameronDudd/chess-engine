@@ -29,8 +29,12 @@
 
 static CastlingAvailability castlingAvailabilityLookup[NUM_POSITIONS];
 
-static void pushMoves(BitBoard enemyKing, BitBoard enemyPieces, PositionIndex src, BitBoard* moves, Move** movePtr) {
-  enemyPieces &= ~enemyKing;
+static ZobristHash zobristPositionHashes[PIECE_END][NUM_POSITIONS];
+static ZobristHash zobristBlackToMoveHash;
+static ZobristHash zobristCastlingHashes[CAN_CASTLE_MAX_NUM];
+static ZobristHash zobristEnPassantFileHashes[NUM_FILES];
+
+static void pushMoves(PositionIndex src, BitBoard* moves, Move** movePtr) {
   while (*moves) {
     PositionIndex dst = popLSB(moves);
     *(*movePtr)++     = MOVE(MOVE_META_QUIET, MOVE_FLAG_QUIET, dst, src);
@@ -112,6 +116,17 @@ static void initCastlingAvailability(void) {
   castlingAvailabilityLookup[H8] = ~CASTLE_BLACK_KING;
 }
 
+static void initZobristHashes(void) {
+  for (unsigned int i = 0; i < NUM_PIECE_TYPES * 2; ++i) {
+    for (unsigned int j = 0; j < NUM_POSITIONS; ++j) {
+      zobristPositionHashes[i][j] = sparsexorshift64();
+    }
+  }
+  zobristBlackToMoveHash = sparsexorshift64();
+  for (unsigned int i = 0; i < CAN_CASTLE_MAX_NUM; ++i) zobristCastlingHashes[i] = sparsexorshift64();
+  for (unsigned int i = 0; i < NUM_FILES; ++i) zobristEnPassantFileHashes[i] = sparsexorshift64();
+}
+
 void initBoard(Board* board) {
   // Zero out the board
   for (int i = 0; i < NUM_POSITIONS; ++i) board->squares[i] = (Piece)0;
@@ -120,24 +135,45 @@ void initBoard(Board* board) {
   board->epSquare             = NAP;
   board->whites               = (BitBoard)0;
   board->blacks               = (BitBoard)0;
+  board->zobrist              = (ZobristHash)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->whitePieceBoards[i] = (BitBoard)0;
   for (int i = 0; i < NUM_PIECE_TYPES; ++i) board->blackPieceBoards[i] = (BitBoard)0;
 
   initMagicAttacks();
+  initZobristHashes();
   initCastlingAvailability();
+}
+
+void initBoardZobrist(Board* board) {
+  board->zobrist = (ZobristHash)0;
+
+  for (PositionIndex p = 0; p < NUM_POSITIONS; ++p) {
+    Piece piece = board->squares[p];
+    if (piece != PIECE_NULL) board->zobrist ^= zobristPositionHashes[piece][p];
+  }
+
+  if (board->turn == BLACK) board->zobrist ^= zobristBlackToMoveHash;
+
+  board->zobrist ^= zobristCastlingHashes[board->castlingAvailability];
+
+  if (board->epSquare != NAP) board->zobrist ^= zobristEnPassantFileHashes[INDEX_FILE(board->epSquare)];
 }
 
 void boardSetPiece(Board* board, PositionIndex position, Piece piece) {
   if (piece == PIECE_NULL) return;
 
+  BitBoard positionBit = POSITION_BIT(position);
+
   if (PIECE_WHITE(piece)) {
-    board->whites |= POSITION_BIT(position);
-    board->whitePieceBoards[piece - WK] |= POSITION_BIT(position);
+    board->whites |= positionBit;
+    board->whitePieceBoards[piece - WK] |= positionBit;
   } else {
-    board->blacks |= POSITION_BIT(position);
-    board->blackPieceBoards[piece - BK] |= POSITION_BIT(position);
+    board->blacks |= positionBit;
+    board->blackPieceBoards[piece - BK] |= positionBit;
   }
+
   board->squares[position] = piece;
+  board->zobrist ^= zobristPositionHashes[piece][position];
 }
 
 static void boardRemovePiece(Board* board, const PositionIndex position, const Piece piece) {
@@ -154,10 +190,7 @@ static void boardRemovePiece(Board* board, const PositionIndex position, const P
   }
 
   board->squares[position] = PIECE_NULL;
-}
-
-Piece boardGetPiece(const Board* board, PositionIndex position) {
-  return board->squares[position];
+  board->zobrist ^= zobristPositionHashes[piece][position];
 }
 
 void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readability-function-cognitive-complexity)
@@ -174,7 +207,9 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
   undo->castlingAvailability = board->castlingAvailability;
   undo->epSquare             = board->epSquare;
   undo->epCapturedSquare     = NAP;
+  undo->zobrist              = board->zobrist;
 
+  if (board->epSquare != NAP) board->zobrist ^= zobristEnPassantFileHashes[INDEX_FILE(board->epSquare)];
   board->epSquare = NAP;
 
   if (target != PIECE_NULL) boardRemovePiece(board, dst, target);
@@ -182,8 +217,10 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
   boardRemovePiece(board, src, piece);
   boardSetPiece(board, dst, piece);
 
+  board->zobrist ^= zobristCastlingHashes[board->castlingAvailability];
   board->castlingAvailability &= castlingAvailabilityLookup[src];
   board->castlingAvailability &= castlingAvailabilityLookup[dst];
+  board->zobrist ^= zobristCastlingHashes[board->castlingAvailability];
 
   if ((piece == WK || piece == BK) && (flag == MOVE_FLAG_CASTLE)) {
     Piece rook = (board->turn == WHITE) ? WR : BR;
@@ -197,7 +234,10 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
   }
 
   if (piece == WP || piece == BP) {
-    if (abs(dst - src) == (NUM_FILES * 2)) board->epSquare = (src + dst) / 2;
+    if (abs(dst - src) == (NUM_FILES * 2)) {
+      board->epSquare = (src + dst) / 2;
+      board->zobrist ^= zobristEnPassantFileHashes[INDEX_FILE(board->epSquare)];
+    }
     if (flag == MOVE_FLAG_EP) {
       undo->epCapturedSquare = (board->turn == WHITE) ? dst - NUM_FILES : dst + NUM_FILES;
       boardRemovePiece(board, undo->epCapturedSquare, (board->turn == WHITE) ? BP : WP);
@@ -211,6 +251,7 @@ void boardMakeMove(Board* board, Move move, UndoMove* undo) {  // NOLINT(readabi
     }
   }
 
+  board->zobrist ^= zobristBlackToMoveHash;
   board->turn = (board->turn == WHITE) ? BLACK : WHITE;
 }
 
@@ -232,9 +273,6 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
 
   boardSetPiece(board, src, piece);
 
-  board->castlingAvailability = undo->castlingAvailability;
-  board->epSquare             = undo->epSquare;
-
   if (undo->captured != PIECE_NULL) boardSetPiece(board, dst, undo->captured);
 
   if (flag == MOVE_FLAG_CASTLE) {
@@ -249,6 +287,10 @@ void boardUnmakeMove(Board* board, const UndoMove* undo) {
   } else if (flag == MOVE_FLAG_EP) {
     boardSetPiece(board, undo->epCapturedSquare, board->turn == WHITE ? WP : BP);
   }
+
+  board->castlingAvailability = undo->castlingAvailability;
+  board->epSquare             = undo->epSquare;
+  board->zobrist              = undo->zobrist;
 
   board->turn = (board->turn == WHITE) ? BLACK : WHITE;
 }

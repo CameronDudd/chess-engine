@@ -42,6 +42,8 @@ static Piece fenPiece(const char fen) {
 }
 
 void fenPopulateBoard(const char* fen, Board* board) {
+  initBoard(board);
+
   uint8_t rank = MAX_RANK;
   uint8_t file = 0;
   char c;
@@ -102,4 +104,6 @@ void fenPopulateBoard(const char* fen, Board* board) {
   // TODO: Fullmove
   while ((c = *fen++) != '\0') {  // NOLINT(clang-analyzer-deadcode.DeadStores)
   }
+
+  initBoardZobrist(board);
 }
