@@ -30,7 +30,8 @@
 #define S_TO_NS 100000000ULL
 #define MS_TO_NS 100000ULL
 
-const int pieceValueLookup[NUM_PIECE_TYPES] = {KING_VALUE, QUEEN_VALUE, ROOK_VALUE, BISHOP_VALUE, KNIGHT_VALUE, PAWN_VALUE};
+const int pieceValueLookup[NUM_PIECE_TYPES]                          = {KING_VALUE, QUEEN_VALUE, ROOK_VALUE, BISHOP_VALUE, KNIGHT_VALUE, PAWN_VALUE};
+TranspositionTableEntry transpositionTable[TRANSPOSITION_TABLE_SIZE] = {0};
 
 static uint64_t monoTimeNs(void) {
   struct timespec tp;
@@ -153,7 +154,21 @@ static int quiescentSearch(Board* board, int alpha, int beta) {
   return alpha;
 }
 
-int search(Board* board, int ply, unsigned int depth, int alpha, int beta, Move* bestMove, SearchTimer* searchTimer) {
+int search(Board* board, int ply, unsigned int depth, int alpha, int beta, Move* bestMove,  // NOLINT(readability-function-cognitive-complexity)
+           SearchTimer* searchTimer) {
+  int originalAlpha              = alpha;
+  ZobristHash transpositionIndex = board->zobrist & (TRANSPOSITION_TABLE_SIZE - 1);
+  TranspositionTableEntry tte    = transpositionTable[transpositionIndex];
+
+  if ((tte.zobrist == board->zobrist) && (tte.depth >= depth)) {
+    if (tte.type == TRANSPOSITION_TYPE_EXACT) {
+      if (ply == 0 && bestMove != NULL) *bestMove = tte.move;
+      return tte.score;
+    }
+    if (tte.type == TRANSPOSITION_TYPE_LOWERBOUND && tte.score >= beta) return beta;
+    if (tte.type == TRANSPOSITION_TYPE_UPPERBOUND && tte.score <= alpha) return alpha;
+  }
+
   // TODO: Don't check timeout every call
   if (monoTimeNs() >= searchTimer->endTimeNs) {
     searchTimer->searchInterrupted = true;
@@ -204,8 +219,21 @@ int search(Board* board, int ply, unsigned int depth, int alpha, int beta, Move*
     if (score > alpha) alpha = score;
   }
 
-  if (ply == 0) {
-    if (bestMove != NULL) *bestMove = localBestMove;
+  if ((ply == 0) && (bestMove != NULL)) *bestMove = localBestMove;
+
+  if (!searchTimer->searchInterrupted) {
+    TranspositionEntryType tteType = TRANSPOSITION_TYPE_EXACT;
+    if (localBestScore >= beta) {
+      tteType = TRANSPOSITION_TYPE_LOWERBOUND;
+    } else if (localBestScore <= originalAlpha) {
+      tteType = TRANSPOSITION_TYPE_UPPERBOUND;
+    }
+
+    transpositionTable[transpositionIndex].zobrist = board->zobrist;
+    transpositionTable[transpositionIndex].move    = localBestMove;
+    transpositionTable[transpositionIndex].depth   = depth;
+    transpositionTable[transpositionIndex].type    = tteType;
+    transpositionTable[transpositionIndex].score   = localBestScore;
   }
 
   return localBestScore;
